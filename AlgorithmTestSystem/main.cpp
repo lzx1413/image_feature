@@ -1,9 +1,9 @@
 // TestVLAD_FV.cpp : 定义控制台应用程序的入口点。
 //
-
+//include the files form opencv
 #include <opencv2/opencv.hpp>
 #include <opencv2/xfeatures2d.hpp>
-
+//stl
 #include <vector>
 #include <string>
 #include <fstream>
@@ -20,7 +20,8 @@
 
 using namespace std;
 using namespace cv;
-
+const static int NUMBER_OF_IMAGES = 100;
+const static string PATH_OF_WORK = "D:/E/work/dressplus/code/temp/";
 
 void RootNormFeature(vector<float>& sdes);
 void L2NormFeature(Mat& smat, int rowidx);
@@ -36,8 +37,7 @@ void extDenseVlSiftDes(Mat& sImg, Mat& descriptors);
 vector<float> getVector(const Mat &_t1f);
 vector<float> genVlEncodeFormat(Mat& descriptors, Mat& mlModel);
 void extSparseVlSiftDes(Mat &sImg, Mat& descriptors);
-
-
+PCA compressPCA(const Mat& pcaset, int maxComponents,const Mat& testset, Mat& compressed);
 //INIT VLAD ENGINE
 VlKMeans * initVladEngine(string vlad_km_path, vl_size& feature_dim, vl_size& clusterNum);
 vector<float> encodeVladFea(VlKMeans *vladModel, vector<float> rawFea, int feature_dim, int clusterNum);
@@ -88,30 +88,36 @@ Mat patchWiseStdDevDiv(Mat sImg)
 #include <ctime>
 #define SELECT_NUM 1000
 #define FEA_DIM 32
-
-//#define EXTSIFT_PHASE
+#define USE_PCA
+#define EXTSIFT_PHASE
 //#define TRAIN_PHASE
-#define TEST_PHASE
+//#define TEST_PHASE
 int main(int argc, char* argv[])
 {
 
 #ifdef EXTSIFT_PHASE
-	ifstream inputF("C:/Users/LB/Desktop/train.list");
+	ifstream inputF("D:/E/work/dressplus/code/temp/trainlist.txt");
 	// load model 
 	Mat mlModel;
-	load_metric_model("C:/Users/LB/Desktop/fishervector/DimentionReduceMat_vlsift_32.txt", mlModel);
+	load_metric_model("D:/E/work/dressplus/code/temp/DimentionReduceMat_vlsift_32.txt", mlModel);
 
-	ofstream outputF("C:/Users/LB/Desktop/vlsift_tmp.fea");
+	ofstream outputF("D:/E/work/dressplus/code/temp/vlsift_tmp1000.fea");
 	string line;
 	int cnt = 0;
+	int img_number = 0;
+	Mat descriptor_set;
 	while (getline(inputF, line))
 	{
 		if (cnt++ % 100 == 0)
 			cout << "proc " << cnt << endl;
-
+        if (img_number>NUMBER_OF_IMAGES)
+        {
+			break;
+        }
+		img_number++;
 		srand((unsigned)getTickCount());
 
-		Mat img = imread(line, 0);
+		Mat img = imread("D:/E/work/dressplus/code/data/fvtraindata/"+line, 0);
 		if (img.empty() || img.cols < 64 || img.rows < 64)
 			continue;
 		double t = (double)cv::getTickCount();
@@ -119,11 +125,14 @@ int main(int argc, char* argv[])
 		extDenseVlSiftDes(img, descriptors);
 		t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
 		std::cout << t << " s" << std::endl;
-		vector<float> normfea = genVlEncodeFormat(descriptors, mlModel);
+#ifdef USE_PCA
 
+		descriptor_set.push_back(descriptors);
+#else
+		vector<float> normfea = genVlEncodeFormat(descriptors, mlModel);
+		cout << descriptors.rows<< endl;
 		int len = normfea.size() / FEA_DIM;
 		assert(normfea.size() % FEA_DIM == 0);
-
 		for (int j = 0; j < min(SELECT_NUM, len); j++)
 		{
 			int beg = (rand() % len)*FEA_DIM;
@@ -132,8 +141,24 @@ int main(int argc, char* argv[])
 
 			outputF << endl;
 		}
+#endif//USE_PCA
 	}
 	cout << "proc " << cnt << endl;
+#ifdef USE_PCA
+	L2NormFeature(descriptor_set);
+	Mat descriptor_set_after_pca;
+	compressPCA(descriptor_set.rowRange(0,100), 32, descriptor_set, descriptor_set_after_pca);
+	for (auto i = 0; i < descriptor_set_after_pca.rows;++i)
+	{
+		for (auto c = 0; c < descriptor_set_after_pca.cols;++c)
+		{
+			auto data = descriptor_set_after_pca.at<float>(i, c);
+			outputF << data;
+		}
+		outputF << endl;
+	}
+
+#endif // USE_PCA
 
 	inputF.close();
 	outputF.close();
@@ -168,8 +193,8 @@ int main(int argc, char* argv[])
 	vl_kmeans_set_initialization(kmeans, VlKMeansRandomSelection);
 
 
-	string kmeansF = "C:/Users/LB/Desktop/vlad128_sift32.model";
-	ifstream inputF("C:/Users/LB/Desktop/vlsift_tmp.fea");
+	string kmeansF = "D:/E/work/dressplus/code/temp/vlad128_sift32.model";
+	ifstream inputF("D:/E/work/dressplus/code/temp/vlsift_tmp1000.fea");
 	string line;
 	vector<float> data_des;
 	while (getline(inputF, line))
@@ -178,6 +203,7 @@ int main(int argc, char* argv[])
 		split_words(line, " ", ww);
 		assert(ww.size() == FEA_DIM);
 		for (int i = 0; i < ww.size(); i++)
+			//TODO: bad alloc
 			data_des.push_back(atof(ww[i].c_str()));
 	}
 
@@ -200,27 +226,32 @@ int main(int argc, char* argv[])
 #endif
 
 #ifdef TEST_PHASE
-	ifstream inputF("C:/Users/LB/Desktop/test.list");
+	ifstream inputF(PATH_OF_WORK+"trainlist.txt");
 	// load model 
 	Mat mlModel;
-	bool flag = load_metric_model("C:/Users/LB/Desktop/fishervector/DimentionReduceMat_vlsift_32.txt", mlModel);
+	bool flag = load_metric_model(PATH_OF_WORK+"DimentionReduceMat_vlsift_32.txt", mlModel);
 	if (!flag)
 		return -1;
 	// load VLAD model
 	vl_size dimension = -1;
 	vl_size numClusters = -1;
-	VlKMeans *kmeans = initVladEngine("C:/Users/LB/Desktop/vlad128_sift32.model", dimension, numClusters);
+	VlKMeans *kmeans = initVladEngine(PATH_OF_WORK+"vlad128_sift32.model", dimension, numClusters);
 
 	//------
-	ofstream outputF("C:/Users/LB/Desktop/vlad_sift32.test.fea");
+	ofstream outputF(PATH_OF_WORK+"vlad_sift32.test.fea");
 	string line;
 	int cnt = 0;
+	int img_number = 0;
 	while (getline(inputF, line))
 	{
 		if (cnt++ % 100 == 0)
 			cout << "proc " << cnt << endl;
-
-		Mat imgS = imread(line, 0);
+		if (img_number > NUMBER_OF_IMAGES)
+		{
+			break;
+		}
+		img_number++;
+		Mat imgS = imread("D:/E/work/dressplus/code/data/fvtraindata/"+line, 0);
 		if (imgS.empty() || imgS.cols < 64 || imgS.rows < 64)
 			continue;
 		// norm image
@@ -254,7 +285,8 @@ int main(int argc, char* argv[])
 	inputF.close();
 	outputF.close();
 #endif
-
+	cout << "work has been down" << endl;
+	getchar();
 	return 0;
 }
 
@@ -318,7 +350,7 @@ void loadGmmModel(const char * modelFile, VlGMM *& gmm, vl_size & dimension, vl_
 	ifstream ifp(modelFile);
 	if (!ifp.is_open())
 	{
-		cout << "Can't open " << modelFile << endl;
+		std::cout << "Can't open " << modelFile << endl;
 		exit(-1);
 	}
 	string line;
@@ -731,4 +763,35 @@ void extSparseVlSiftDes(Mat &sImg, Mat& descriptors)
 	delete[] ImageData;
 	ImageData = NULL;
 
+}
+
+PCA compressPCA(const Mat& pcaset, int maxComponents,
+	const Mat& testset, Mat& compressed)
+{
+	PCA pca(pcaset, // pass the data
+		Mat(), // we do not have a pre-computed mean vector,
+		// so let the PCA engine to compute it
+		PCA::DATA_AS_ROW, // indicate that the vectors
+		// are stored as matrix rows
+		// (use PCA::DATA_AS_COL if the vectors are
+		// the matrix columns)
+		maxComponents // specify, how many principal components to retain
+		);
+	// if there is no test data, just return the computed basis, ready-to-use
+	if (!testset.data)
+		return pca;
+	CV_Assert(testset.cols == pcaset.cols);
+	compressed.create(testset.rows, maxComponents, testset.type());
+	Mat reconstructed;
+	for (int i = 0; i < testset.rows; i++)
+	{
+		Mat vec = testset.row(i), coeffs = compressed.row(i), reconstructed;
+		// compress the vector, the result will be stored
+		// in the i-th row of the output matrix
+		pca.project(vec, coeffs);
+		// and then reconstruct it
+		pca.backProject(coeffs, reconstructed);
+		// and measure the error
+		printf("%d. diff = %g\n", i, norm(vec, reconstructed, NORM_L2));
+	}
 }
