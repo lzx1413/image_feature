@@ -88,36 +88,34 @@ Mat patchWiseStdDevDiv(Mat sImg)
 #include <ctime>
 #define SELECT_NUM 1000
 #define FEA_DIM 32
-#define USE_PCA
-#define EXTSIFT_PHASE
+//#define USE_PCA
+//#define EXTSIFT_PHASE
 //#define TRAIN_PHASE
 //#define TEST_PHASE
-int main(int argc, char* argv[])
+void ExitTheSiftFeature(string trainlistfile)
 {
-
-#ifdef EXTSIFT_PHASE
-	ifstream inputF("D:/E/work/dressplus/code/temp/trainlist.txt");
+	ifstream inputtrainlistF(trainlistfile.c_str());
 	// load model 
 	Mat mlModel;
-	load_metric_model("D:/E/work/dressplus/code/temp/DimentionReduceMat_vlsift_32.txt", mlModel);
+	load_metric_model(PATH_OF_WORK+"DimentionReduceMat_vlsift_32.txt", mlModel);
 
-	ofstream outputF("D:/E/work/dressplus/code/temp/vlsift_tmp1000.fea");
+	ofstream outputF("vlsift_tmp.fea");
 	string line;
 	int cnt = 0;
 	int img_number = 0;
 	Mat descriptor_set;
-	while (getline(inputF, line))
+	while (getline(inputtrainlistF, line))
 	{
 		if (cnt++ % 100 == 0)
 			cout << "proc " << cnt << endl;
-        if (img_number>NUMBER_OF_IMAGES)
-        {
+		if (img_number > NUMBER_OF_IMAGES)
+		{
 			break;
-        }
+		}
 		img_number++;
 		srand((unsigned)getTickCount());
 
-		Mat img = imread("D:/E/work/dressplus/code/data/fvtraindata/"+line, 0);
+		Mat img = imread("D:/E/work/dressplus/code/data/fvtraindata/" + line, 0);
 		if (img.empty() || img.cols < 64 || img.rows < 64)
 			continue;
 		double t = (double)cv::getTickCount();
@@ -130,7 +128,7 @@ int main(int argc, char* argv[])
 		descriptor_set.push_back(descriptors);
 #else
 		vector<float> normfea = genVlEncodeFormat(descriptors, mlModel);
-		cout << descriptors.rows<< endl;
+		cout << descriptors.rows << endl;
 		int len = normfea.size() / FEA_DIM;
 		assert(normfea.size() % FEA_DIM == 0);
 		for (int j = 0; j < min(SELECT_NUM, len); j++)
@@ -147,10 +145,10 @@ int main(int argc, char* argv[])
 #ifdef USE_PCA
 	L2NormFeature(descriptor_set);
 	Mat descriptor_set_after_pca;
-	compressPCA(descriptor_set.rowRange(0,100), 32, descriptor_set, descriptor_set_after_pca);
-	for (auto i = 0; i < descriptor_set_after_pca.rows;++i)
+	compressPCA(descriptor_set, 32, descriptor_set, descriptor_set_after_pca);
+	for (auto i = 0; i < descriptor_set_after_pca.rows; ++i)
 	{
-		for (auto c = 0; c < descriptor_set_after_pca.cols;++c)
+		for (auto c = 0; c < descriptor_set_after_pca.cols; ++c)
 		{
 			auto data = descriptor_set_after_pca.at<float>(i, c);
 			outputF << data;
@@ -160,11 +158,11 @@ int main(int argc, char* argv[])
 
 #endif // USE_PCA
 
-	inputF.close();
+	inputtrainlistF.close();
 	outputF.close();
-#endif
-
-#ifdef TRAIN_PHASE
+}
+void TrainVladModel()
+{
 	// set params
 	vl_set_num_threads(0); /* use the default number of threads */
 
@@ -193,8 +191,8 @@ int main(int argc, char* argv[])
 	vl_kmeans_set_initialization(kmeans, VlKMeansRandomSelection);
 
 
-	string kmeansF = "D:/E/work/dressplus/code/temp/vlad128_sift32.model";
-	ifstream inputF("D:/E/work/dressplus/code/temp/vlsift_tmp1000.fea");
+	string kmeansF = "vlad128_sift32.model";
+	ifstream inputF("vlsift_tmp.fea");
 	string line;
 	vector<float> data_des;
 	while (getline(inputF, line))
@@ -222,23 +220,23 @@ int main(int argc, char* argv[])
 	if (kmeans) {
 		vl_kmeans_delete(kmeans);
 	}
+}
 
-#endif
-
-#ifdef TEST_PHASE
-	ifstream inputF(PATH_OF_WORK+"trainlist.txt");
+int TestVladModel(string testlistfile)
+{
+	ifstream inputF(testlistfile.c_str());
 	// load model 
 	Mat mlModel;
-	bool flag = load_metric_model(PATH_OF_WORK+"DimentionReduceMat_vlsift_32.txt", mlModel);
+	bool flag = load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel);
 	if (!flag)
 		return -1;
 	// load VLAD model
 	vl_size dimension = -1;
 	vl_size numClusters = -1;
-	VlKMeans *kmeans = initVladEngine(PATH_OF_WORK+"vlad128_sift32.model", dimension, numClusters);
+	VlKMeans *kmeans = initVladEngine("vlad128_sift32.model", dimension, numClusters);
 
 	//------
-	ofstream outputF(PATH_OF_WORK+"vlad_sift32.test.fea");
+	ofstream outputF( "vlad_sift32.test.fea");
 	string line;
 	int cnt = 0;
 	int img_number = 0;
@@ -251,7 +249,7 @@ int main(int argc, char* argv[])
 			break;
 		}
 		img_number++;
-		Mat imgS = imread("D:/E/work/dressplus/code/data/fvtraindata/"+line, 0);
+		Mat imgS = imread("D:/E/work/dressplus/code/data/fvtraindata/" + line, 0);
 		if (imgS.empty() || imgS.cols < 64 || imgS.rows < 64)
 			continue;
 		// norm image
@@ -284,7 +282,37 @@ int main(int argc, char* argv[])
 	vl_kmeans_delete(kmeans);
 	inputF.close();
 	outputF.close();
-#endif
+}
+void help()
+{
+	cout << "Ussage:--trainlist <trianlist \n\t --testlist <testlist>" << endl;
+}
+int main(int argc, char* argv[])
+{
+	string trainlistfile;
+	string testlistfile;
+	if (argc == 1)
+	{
+		help();
+		return -1;
+	}
+	for (int i = 1; i < argc;++i)
+	{
+		
+		if (string(argv[i])=="--trainlist")
+		{
+			trainlistfile = argv[++i];
+		}
+		else if (string(argv[i]) == "--testlist")
+		{
+			testlistfile = argv[++i];
+		}
+
+	}
+	ExitTheSiftFeature(trainlistfile);
+	TrainVladModel();
+	TestVladModel(testlistfile);
+	
 	cout << "work has been down" << endl;
 	getchar();
 	return 0;
@@ -296,7 +324,6 @@ int main(int argc, char* argv[])
 void split_words(const string& src, const string& separator, vector<string>& dest)
 {
 	dest.clear();
-
 	string str = src;
 	string substring;
 	string::size_type start = 0, index;
@@ -782,7 +809,10 @@ PCA compressPCA(const Mat& pcaset, int maxComponents,
 		return pca;
 	CV_Assert(testset.cols == pcaset.cols);
 	compressed.create(testset.rows, maxComponents, testset.type());
-	Mat reconstructed;
+	pca.project(testset, compressed);
+	FileStorage pcafile(PATH_OF_WORK + "pca_model.yml", FileStorage::WRITE);
+	pca.write(pcafile);
+	/*Mat reconstructed;
 	for (int i = 0; i < testset.rows; i++)
 	{
 		Mat vec = testset.row(i), coeffs = compressed.row(i), reconstructed;
@@ -790,8 +820,8 @@ PCA compressPCA(const Mat& pcaset, int maxComponents,
 		// in the i-th row of the output matrix
 		pca.project(vec, coeffs);
 		// and then reconstruct it
-		pca.backProject(coeffs, reconstructed);
+		//pca.backProject(coeffs, reconstructed);
 		// and measure the error
-		printf("%d. diff = %g\n", i, norm(vec, reconstructed, NORM_L2));
-	}
+		//printf("%d. diff = %g\n", i, norm(vec, reconstructed, NORM_L2));
+	}*/
 }
