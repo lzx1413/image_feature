@@ -4,13 +4,13 @@
 using namespace std;
 const static int NUMBER_OF_IMAGES = 100;
 const static string PATH_OF_WORK = "D:/E/work/dressplus/code/temp/";
-#define SELECT_NUM 1000
-#define FEA_DIM 32
+const static int SELECT_NUM = 1000;
+const static int  FEA_DIM = 32;
 namespace vlad{
+
 	void saveGmmModel(const char * modelFile, VlGMM * gmm)
 	{
 		vl_size d, cIdx;
-
 		vl_size dimension = vl_gmm_get_dimension(gmm);
 		vl_size numClusters = vl_gmm_get_num_clusters(gmm);
 		float * sigmas = (float*)vl_gmm_get_covariances(gmm);
@@ -227,12 +227,12 @@ namespace vlad{
 	{
 		float * enc = (float*)vl_malloc(sizeof(float)*feature_dim*clusterNum);
 		int elemSize = rawFea.size() / feature_dim;
-		// find nearest cluster centers for the data that should be encoded
+		/// find nearest cluster centers for the data that should be encoded
 		vl_uint32* idx_v = (vl_uint32*)vl_malloc(sizeof(vl_uint32) * elemSize);
 		float* dists = (float*)vl_malloc(sizeof(float) * elemSize);
 		vl_kmeans_quantize(vladModel, idx_v, dists, rawFea.data(), elemSize);
-		// convert indexes array to assignments array,
-		// which can be processed by vl_vlad_encode
+		///convert indexes array to assignments array,
+		///which can be processed by vl_vlad_encode
 		float* assignments = (float*)vl_malloc(sizeof(float) * elemSize * clusterNum);
 		memset(assignments, 0, sizeof(float) * elemSize * clusterNum);
 		for (int i = 0; i < elemSize; i++) {
@@ -422,7 +422,7 @@ namespace vlad{
 		ifstream inputtrainlistF(trainlistfile.c_str());
 		// load model 
 		Mat mlModel;
-		load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel);
+		load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel,"reduce");
 
 		ofstream outputF("vlsift_tmp.fea");
 		string line;
@@ -552,7 +552,7 @@ namespace vlad{
 		ifstream inputF(testlistfile.c_str());
 		// load model 
 		Mat mlModel;
-		bool flag = load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel);
+		bool flag = load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel,"reduce");
 		if (!flag)
 			return -1;
 		// load VLAD model

@@ -41,10 +41,12 @@ int main(int argc, char* argv[])
 		}
 
 	}
-	vlad::ExitTheSiftFeature(trainlistfile);
-	vlad::TrainVladModel();
-	vlad::TestVladModel(testlistfile);
-	
+	//vlad::ExitTheSiftFeature(trainlistfile);
+	//vlad::TrainVladModel();
+	//vlad::TestVladModel(testlistfile);
+	vector<float>a{ 1.0, 2.0, 4.0 };
+	Mat M2 = Mat(3, 1, CV_32FC1,a.data());
+	cout << M2 << endl;
 	cout << "work has been down" << endl;
 	getchar();
 	return 0;

@@ -17,6 +17,12 @@ void L2NormFeature(Mat& smat)
 	for (int i = 0; i < smat.rows; i++)
 		L2NormFeature(smat, i);
 }
+/**
+*此方法用于将一条string按照给定的分隔符分成string的vector型
+*@param src 输入的字符串
+*@param separator 分隔符
+*@param dest 分理出的string数组
+*/
 void split_words(const string& src, const string& separator, vector<string>& dest)
 {
 	dest.clear();
@@ -40,22 +46,27 @@ void split_words(const string& src, const string& separator, vector<string>& des
 	substring = str.substr(start);
 	dest.push_back(substring);
 }
-
+//TODO：do understand after
 void RootNormFeature(vector<float>& sdes)
 {
 	int des_dim = sdes.size();
 	float total = 0.0;
-	for (int kk = 0; kk < des_dim; kk++)
+	for (int kk = 0; kk < des_dim; ++kk)
 	{
 		total += fabs(sdes[kk]);
 	}
 	total = total < 0.00001 ? 1 : total;
-	for (int kk = 0; kk < des_dim; kk++)
+	for (int kk = 0; kk < des_dim; ++kk)
 		sdes[kk] = sdes[kk] < 0 ? -1 * sqrt(-1 * sdes[kk] / total) : sqrt(sdes[kk] / total);
 }
-
-bool load_metric_model(string filePath, cv::Mat& ml_model)
+/**
+*此方法用于载入模型矩阵，格式第一行两个数字是行数和列数，都入后转化为float型
+*@param filePath 矩阵路径及文件名
+*@param ml_model 输出矩阵
+*/
+bool load_metric_model(string filePath, cv::Mat& ml_model,string method)
 {
+
 	ifstream inputF(filePath.c_str());
 	if (!inputF.is_open())
 		return false;
@@ -76,17 +87,22 @@ bool load_metric_model(string filePath, cv::Mat& ml_model)
 			ml_model_.at<float>(i, j) = atof(ww[j].c_str());
 		}
 	}
-
-	cv::transpose(ml_model_, ml_model);
-	//ml_model = ml_model_;
+	if (method == "SP")
+	{
+		cv::transpose(ml_model_, ml_model);///SP方法需要将投影矩阵转置
+	}
+	else
+	{
+    	ml_model = ml_model_;
+	}
 	return true;
 }
 
-void do_metric(Mat& mlModel, Mat& smat, Mat& dmat)
+void do_metric(const Mat& mlModel, Mat& smat, Mat& dmat)
 {
-	//L2 Norm
+	///L2 Norm
 	L2NormFeature(smat);
-	//reduction
+	///reduction
 	cv::gemm(smat, mlModel, 1.0, 0.0, 0.0, dmat);
 }
 Mat patchWiseSubtraction(Mat sImg)

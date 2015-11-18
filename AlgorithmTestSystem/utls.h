@@ -8,6 +8,6 @@ void L2NormFeature(Mat& smat, int rowidx);
 void L2NormFeature(Mat& smat);
 void split_words(const string& src, const string& separator, vector<string>& dest);
 void RootNormFeature(vector<float>& sdes);
-bool load_metric_model(string filePath, cv::Mat& ml_model);
-void do_metric(Mat& mlModel, Mat& smat, Mat& dmat);
+bool load_metric_model(string filePath, cv::Mat& ml_model, string method);
+void do_metric( const Mat& mlModel, Mat& smat, Mat& dmat);
 #endif // !UTILS_H
