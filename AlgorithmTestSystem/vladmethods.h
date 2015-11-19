@@ -28,7 +28,7 @@ namespace vlad{
 	*/
 	void extDenseVlSiftDes(Mat& sImg, Mat& descriptors);
 	vector<float> getVector(const Mat &_t1f);
-	vector<float> genVlEncodeFormat(Mat& descriptors, Mat& mlModel);
+	vector<float> genDescriptorReduced(Mat& descriptors, Mat& mlModel);
 	void extSparseVlSiftDes(Mat &sImg, Mat& descriptors);
 	PCA compressPCA(const Mat& pcaset, int maxComponents, const Mat& testset, Mat& compressed);
 	//INIT VLAD ENGINE

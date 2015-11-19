@@ -45,26 +45,21 @@ int main(int argc, char* argv[])
 	//vlad::ExitTheSiftFeature(trainlistfile);
 	//vlad::TrainVladModel();
 	//vlad::TestVladModel(testlistfile);
-	Mat model = Mat(3, 2, CV_32FC1);
-	float model_temp[3][2]{{-1.0, 1.0}, { 1.0, -1.0 }, { 1.0, -1.0 }};
-
-	for (int i = 0; i < 3; ++i)
-	{
-		for (int j = 0; j < 2; ++j)
-		{
-			model.at<float>(i, j) = model_temp[i][j];
-		}
-	}
+    
 	Mat rawdata = Mat(1, 3, CV_32FC1);
 	rawdata.setTo(1);
 	cout << rawdata << endl;
 	Mat result;
+	Mat model = (Mat_<float>(3, 2) << 1, 1, 1, -1, -1, -1);
 	encode2Binary(rawdata, model, result);
 	cout << "work has been down"<< rawdata << endl << model << endl << result << endl;
 	vector<float> rawdata2{ 1.0, 1.0, 1.0 };
 	Mat result2;
 	encode2Binary(rawdata2, model, result2);
 	cout << result2 << endl;
+	Mat model2 = (Mat_<uchar>(3, 2) << 1, 1, 1, 1, 1, 1);
+	model2.assignTo(model2, CV_32FC1);
+	cout << model2<<endl<<model2.type();
 	getchar();
 	return 0;
 }

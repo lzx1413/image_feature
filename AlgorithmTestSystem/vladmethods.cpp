@@ -16,7 +16,6 @@ namespace vlad{
 		float * sigmas = (float*)vl_gmm_get_covariances(gmm);
 		float * means = (float*)vl_gmm_get_means(gmm);
 		float * weights = (float*)vl_gmm_get_priors(gmm);
-
 		ofstream ofp(modelFile);
 		ofp << dimension << " " << numClusters << endl;
 		for (cIdx = 0; cIdx < numClusters; cIdx++) {
@@ -26,7 +25,6 @@ namespace vlad{
 				ofp << sigmas[cIdx*dimension + d] << " ";
 			ofp << weights[cIdx] << endl;
 		}
-
 		ofp.close();
 	}
 
@@ -114,23 +112,19 @@ namespace vlad{
 		numClusters = atoi(ww[1].c_str());
 
 		km = (float*)vl_malloc(sizeof(float)*dimension*numClusters);
-
 		getline(ifp, line);
 		ww.clear();
 		split_words(line, " ", ww);
-
 		for (int cIdx = 0; cIdx < numClusters*dimension; cIdx++) {
 			km[cIdx] = atof(ww[cIdx].c_str());
 		}
 		ifp.close();
-
 		cout << "Load model ok " << endl;
 	}
 
 	void extDenseVlSiftDes(Mat& sImg, Mat& descriptors)
 	{
 		Rect box = Rect(1, 1, sImg.size().width - 2, sImg.size().height - 2);
-
 		Mat img;
 		if (sImg.channels() == 1)
 			img = sImg;
@@ -138,13 +132,12 @@ namespace vlad{
 			cv::cvtColor(sImg, img, cv::COLOR_BGR2GRAY);
 		}
 
-		float *im = (float*)malloc(img.cols*img.rows*sizeof(float));
+		float *im = (float*)malloc(img.cols*img.rows*sizeof(float));//兼容vlfeat的接口进行数据转换
 		for (int i = 0; i < img.rows; i++)
 			for (int j = 0; j < img.cols; j++)
 				im[i*img.cols + j] = float(img.at<uchar>(i, j));
 
 		//-- set dsift parameters
-
 		//	8.0f,     //initFeatureScale: 
 		int featureScale = 8.0;
 		//	3,        //featureScaleLevels
@@ -165,7 +158,6 @@ namespace vlad{
 			VlDsiftFilter *filter = vl_dsift_new_basic(img.cols, img.rows, xyStep_, featureScale_);
 			vl_dsift_set_bounds(filter, box.x, box.y, box.x + box.width, box.y + box.height);
 			vl_dsift_set_flat_window(filter, true);  //flat_window is faster than gaussian smooth
-
 			// run core
 			vl_dsift_process(filter, im);
 			// get descriptor
@@ -197,7 +189,7 @@ namespace vlad{
 		return (vector<float>)(t1f.reshape(1, 1));
 	}
 
-	vector<float> genVlEncodeFormat(Mat& descriptors, Mat& mlModel)
+	vector<float> genDescriptorReduced(Mat& descriptors, Mat& mlModel)
 	{
 		Mat dmat;
 		do_metric(mlModel, descriptors, dmat);
@@ -207,19 +199,17 @@ namespace vlad{
 
 	VlKMeans * initVladEngine(string vlad_km_path, vl_size& feature_dim, vl_size& clusterNum)
 	{
-		// load VLAD model
-		vl_size dimension = -1;
-		vl_size numClusters = -1;
-		float* vlad_km = NULL;
+		/// load VLAD model
+		vl_size dimension=-1;
+		vl_size numClusters=-1;
+		float* vlad_km = nullptr;
 		loadKmeansModel(vlad_km_path.c_str(), vlad_km, dimension, numClusters);
 		feature_dim = dimension*numClusters;
 		VlKMeans *kmeans = vl_kmeans_new(VL_TYPE_FLOAT, VlDistanceL2);
 		vl_kmeans_set_centers(kmeans, vlad_km, dimension, numClusters);
 		vl_free(vlad_km);
-
 		feature_dim = dimension;
 		clusterNum = numClusters;
-
 		return kmeans;
 	}
 
@@ -238,7 +228,7 @@ namespace vlad{
 		for (int i = 0; i < elemSize; i++) {
 			assignments[i * clusterNum + idx_v[i]] = 1.;
 		}
-		// do the encoding job
+		///do the encoding job
 		vl_vlad_encode(enc, VL_TYPE_FLOAT,
 			vl_kmeans_get_centers(vladModel), feature_dim, clusterNum,
 			rawFea.data(), elemSize,
@@ -246,8 +236,8 @@ namespace vlad{
 			0);
 
 		vector<float> vladFea(feature_dim*clusterNum, 0);
+		//TODO: find a way to initial the vector directorly
 		memcpy(vladFea.data(), enc, feature_dim*clusterNum*sizeof(float));
-
 		vl_free(dists);
 		vl_free(assignments);
 		vl_free(idx_v);
@@ -279,13 +269,11 @@ namespace vlad{
 		float *tdescriptor, *top;
 
 		//initializing
-		SiftFilt = NULL;
+		SiftFilt = nullptr;
 		ImageData = new vl_sift_pix[Image.rows*Image.cols];
-
 		ipNum = 0;
 		KeyPoint = 0;
 		LKeyPoint = 0;
-
 		//Eliminating low-contrast descriptors. 
 		//Near-uniform patches do not yield stable keypoints or descriptors. 
 		//vl_sift_set_norm_thresh() can be used to set a threshold on the 
@@ -296,12 +284,14 @@ namespace vlad{
 		//are implicitly selected at high contrast image regions.
 
 		//转换类型
-		for (i = 0; i < Image.rows; i++)
+		Image.assignTo(Image, CV_32FC1);
+		ImageData = (float*)(Image.data);///usding this funtion to replace the next one code block
+		/*for (i = 0; i < Image.rows; i++)
 		{
 			for (j = 0; j < Image.cols; j++)
 				ImageData[i*Image.cols + j] = float(Image.at<uchar>(i, j));
 		}
-
+		*/
 		vector<float> local_contrast;
 		//初始化特征
 		SiftFilt = vl_sift_new(Image.cols, Image.rows, 4, 3, 0);
@@ -376,10 +366,10 @@ namespace vlad{
 		}
 
 		delete[] descriptor;
-		descriptor = NULL;
+		descriptor = nullptr;
 		vl_sift_delete(SiftFilt);
-		delete[] ImageData;
-		ImageData = NULL;
+		//delete[] ImageData;
+		ImageData = nullptr;
 
 	}
 
@@ -422,7 +412,7 @@ namespace vlad{
 		ifstream inputtrainlistF(trainlistfile.c_str());
 		// load model 
 		Mat mlModel;
-		load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel,"reduce");
+		load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel, "reduce");
 
 		ofstream outputF("vlsift_tmp.fea");
 		string line;
@@ -431,38 +421,44 @@ namespace vlad{
 		Mat descriptor_set;
 		while (getline(inputtrainlistF, line))
 		{
-			if (cnt++ % 100 == 0)
-				cout << "proc " << cnt << endl;
-			if (img_number > NUMBER_OF_IMAGES)
-			{
-				break;
-			}
-			img_number++;
-			srand((unsigned)getTickCount());
+			try{
+				if (cnt++ % 100 == 0)
+					cout << "proc " << cnt << endl;
+				if (img_number > NUMBER_OF_IMAGES)
+				{
+					break;
+				}
+				img_number++;
+				srand((unsigned)getTickCount());
 
-			Mat img = imread("D:/E/work/dressplus/code/data/fvtraindata/" + line, 0);
-			if (img.empty() || img.cols < 64 || img.rows < 64)
-				continue;
-			double t = (double)cv::getTickCount();
-			Mat descriptors;
-			extDenseVlSiftDes(img, descriptors);
-			t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-			std::cout << t << " s" << std::endl;
+				Mat img = imread("D:/E/work/dressplus/code/data/fvtraindata/" + line, 0);
+				if (img.empty() || img.cols < 64 || img.rows < 64)
+					continue;
+				double t = (double)cv::getTickCount();
+				Mat descriptors;
+				extDenseVlSiftDes(img, descriptors);
+				t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+				std::cout << t << " s" << std::endl;
 #ifdef USE_PCA
 
-			descriptor_set.push_back(descriptors);
+				descriptor_set.push_back(descriptors);
 #else
-			vector<float> normfea = vlad::genVlEncodeFormat(descriptors, mlModel);
-			cout << descriptors.rows << endl;
-			int len = normfea.size() / FEA_DIM;
-			assert(normfea.size() % FEA_DIM == 0);
-			for (int j = 0; j < min(SELECT_NUM, len); j++)
-			{
-				int beg = (rand() % len)*FEA_DIM;
-				for (int i = beg; i < beg + FEA_DIM; i++)
-					outputF << normfea[i] << " ";
+				vector<float> normfea = vlad::genDescriptorReduced(descriptors, mlModel);
+				cout << descriptors.rows << endl;
+				int len = normfea.size() / FEA_DIM;
+				assert(normfea.size() % FEA_DIM == 0);
+				for (int j = 0; j < min(SELECT_NUM, len); j++)
+				{
+					int beg = (rand() % len)*FEA_DIM;
+					for (int i = beg; i < beg + FEA_DIM; i++)
+						outputF << normfea[i] << " ";
 
-				outputF << endl;
+					outputF << endl;
+				}
+			}
+			catch (...){
+				cout << "there are something wrong with picture" << "D:/E/work/dressplus/code/data/fvtraindata/" << line << endl;
+				continue;
 			}
 #endif//USE_PCA
 		}
@@ -552,7 +548,7 @@ namespace vlad{
 		ifstream inputF(testlistfile.c_str());
 		// load model 
 		Mat mlModel;
-		bool flag = load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel,"reduce");
+		bool flag = load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel, "reduce");
 		if (!flag)
 			return -1;
 		// load VLAD model
@@ -573,35 +569,41 @@ namespace vlad{
 			{
 				//break;
 			}
-			img_number++;
-			Mat imgS = imread("D:/E/work/dressplus/code/data/fvtraindata/" + line, 0);
-			if (imgS.empty() || imgS.cols < 64 || imgS.rows < 64)
+			try{
+				img_number++;
+				Mat imgS = imread("D:/E/work/dressplus/code/data/fvtraindata/" + line, 0);
+				if (imgS.empty() || imgS.cols < 64 || imgS.rows < 64)
+					continue;
+				// norm image
+				int normWidth = 360;
+				int normHeight = 360.0 / imgS.size().width*imgS.size().height;
+				Mat img;
+				resize(imgS, img, Size(normWidth, normHeight));
+
+				double t = (double)cv::getTickCount();
+				Mat descriptors;
+				extDenseVlSiftDes(img, descriptors);
+				//extSparseVlSiftDes(img, descriptors);
+				vector<float> normfea = vlad::genDescriptorReduced(descriptors, mlModel);
+
+				int len = normfea.size() / dimension;
+				assert(normfea.size() % dimension == 0);
+
+				vector<float> vlf = vlad::encodeVladFea(kmeans, normfea, dimension, numClusters);
+				t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+				std::cout << t << " s" << std::endl;
+
+				assert(dimension*numClusters == vlf.size());
+
+				outputF << line;
+				for (int i = 0; i < vlf.size(); i++)
+					outputF << " " << vlf[i];
+				outputF << endl;
+			}
+			catch (...){
+				cout << "there are something wrong with picture" << "D:/E/work/dressplus/code/data/fvtraindata/" << line << endl;
 				continue;
-			// norm image
-			int normWidth = 360;
-			int normHeight = 360.0 / imgS.size().width*imgS.size().height;
-			Mat img;
-			resize(imgS, img, Size(normWidth, normHeight));
-
-			double t = (double)cv::getTickCount();
-			Mat descriptors;
-			extDenseVlSiftDes(img, descriptors);
-			//extSparseVlSiftDes(img, descriptors);
-			vector<float> normfea = vlad::genVlEncodeFormat(descriptors, mlModel);
-
-			int len = normfea.size() / dimension;
-			assert(normfea.size() % dimension == 0);
-
-			vector<float> vlf = vlad::encodeVladFea(kmeans, normfea, dimension, numClusters);
-			t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-			std::cout << t << " s" << std::endl;
-
-			assert(dimension*numClusters == vlf.size());
-
-			outputF << line;
-			for (int i = 0; i < vlf.size(); i++)
-				outputF << " " << vlf[i];
-			outputF << endl;
+			}
 		}
 
 		vl_kmeans_delete(kmeans);
