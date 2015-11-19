@@ -13,6 +13,7 @@
 //Include the files from the vl
 #include "utls.h"
 #include "vladmethods.h"
+#include "encode2binary.h"
 using namespace std;
 using namespace cv;
 void help()
@@ -44,10 +45,26 @@ int main(int argc, char* argv[])
 	//vlad::ExitTheSiftFeature(trainlistfile);
 	//vlad::TrainVladModel();
 	//vlad::TestVladModel(testlistfile);
-	vector<float>a{ 1.0, 2.0, 4.0 };
-	Mat M2 = Mat(3, 1, CV_32FC1,a.data());
-	cout << M2 << endl;
-	cout << "work has been down" << endl;
+	Mat model = Mat(3, 2, CV_32FC1);
+	float model_temp[3][2]{{-1.0, 1.0}, { 1.0, -1.0 }, { 1.0, -1.0 }};
+
+	for (int i = 0; i < 3; ++i)
+	{
+		for (int j = 0; j < 2; ++j)
+		{
+			model.at<float>(i, j) = model_temp[i][j];
+		}
+	}
+	Mat rawdata = Mat(1, 3, CV_32FC1);
+	rawdata.setTo(1);
+	cout << rawdata << endl;
+	Mat result;
+	encode2Binary(rawdata, model, result);
+	cout << "work has been down"<< rawdata << endl << model << endl << result << endl;
+	vector<float> rawdata2{ 1.0, 1.0, 1.0 };
+	Mat result2;
+	encode2Binary(rawdata2, model, result2);
+	cout << result2 << endl;
 	getchar();
 	return 0;
 }
