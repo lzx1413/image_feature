@@ -412,7 +412,7 @@ namespace vlad{
 		ifstream inputtrainlistF(trainlistfile.c_str());
 		// load model 
 		Mat mlModel;
-		load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel, "reduce");
+		load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel, "SP");
 
 		ofstream outputF("vlsift_tmp.fea");
 		string line;
@@ -548,7 +548,7 @@ namespace vlad{
 		ifstream inputF(testlistfile.c_str());
 		// load model 
 		Mat mlModel;
-		bool flag = load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel, "reduce");
+		bool flag = load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel, "SP");
 		if (!flag)
 			return -1;
 		// load VLAD model

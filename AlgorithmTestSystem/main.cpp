@@ -42,9 +42,9 @@ int main(int argc, char* argv[])
 		}
 
 	}
-	//vlad::ExitTheSiftFeature(trainlistfile);
-	//vlad::TrainVladModel();
-	//vlad::TestVladModel(testlistfile);
+	vlad::ExitTheSiftFeature(trainlistfile);
+	vlad::TrainVladModel();
+	vlad::TestVladModel(testlistfile);
     
 	Mat rawdata = Mat(1, 3, CV_32FC1);
 	rawdata.setTo(1);
@@ -60,6 +60,13 @@ int main(int argc, char* argv[])
 	Mat model2 = (Mat_<uchar>(3, 2) << 1, 1, 1, 1, 1, 1);
 	model2.assignTo(model2, CV_32FC1);
 	cout << model2<<endl<<model2.type();
+	for (int i = 0; i < 10;i++)
+	{
+		for (int i = 0; i < 10;i++)
+		{
+			cout << i << endl;
+		}
+	}
 	getchar();
 	return 0;
 }
