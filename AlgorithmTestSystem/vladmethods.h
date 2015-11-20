@@ -5,7 +5,7 @@
 #include <gmm.h>
 #include <dsift.h>
 #include <sift.h>
-#include <vlad.h>"
+#include <vlad.h>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/xfeatures2d.hpp>

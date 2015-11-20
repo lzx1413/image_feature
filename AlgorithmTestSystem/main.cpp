@@ -14,6 +14,7 @@
 #include "utls.h"
 #include "vladmethods.h"
 #include "encode2binary.h"
+#include "MethodTimeResume.h"
 using namespace std;
 using namespace cv;
 void help()
@@ -42,7 +43,7 @@ int main(int argc, char* argv[])
 		}
 
 	}
-	vlad::ExitTheSiftFeature(trainlistfile);
+	/*vlad::ExitTheSiftFeature(trainlistfile);
 	vlad::TrainVladModel();
 	vlad::TestVladModel(testlistfile);
     
@@ -66,7 +67,9 @@ int main(int argc, char* argv[])
 		{
 			cout << i << endl;
 		}
-	}
+	}*/
+	MethodTimeResume timetest("time.log");
+	timetest.test();
 	getchar();
 	return 0;
 }
