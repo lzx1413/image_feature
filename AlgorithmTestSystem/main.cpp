@@ -43,11 +43,11 @@ int main(int argc, char* argv[])
 		}
 
 	}
-	/*vlad::ExitTheSiftFeature(trainlistfile);
-	vlad::TrainVladModel();
+    ///	vlad::ExitTheSiftFeature(trainlistfile);
+	///vlad::TrainVladModel();
 	vlad::TestVladModel(testlistfile);
     
-	Mat rawdata = Mat(1, 3, CV_32FC1);
+	/*Mat rawdata = Mat(1, 3, CV_32FC1);
 	rawdata.setTo(1);
 	cout << rawdata << endl;
 	Mat result;
@@ -68,8 +68,8 @@ int main(int argc, char* argv[])
 			cout << i << endl;
 		}
 	}*/
-	MethodTimeResume timetest("time.log");
-	timetest.test();
+	//MethodTimeResume timetest("time.log");
+	//timetest.test();
 	getchar();
 
 	//vlad::getPCAmodel(trainlistfile, 32);

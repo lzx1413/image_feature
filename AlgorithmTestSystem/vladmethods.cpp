@@ -135,12 +135,12 @@ namespace vlad{
 		else{
 			cv::cvtColor(sImg, img, cv::COLOR_BGR2GRAY);
 		}
-
-		float *im = (float*)malloc(img.cols*img.rows*sizeof(float));//兼容vlfeat的接口进行数据转换
-		for (int i = 0; i < img.rows; i++)
-			for (int j = 0; j < img.cols; j++)
-				im[i*img.cols + j] = float(img.at<uchar>(i, j));
-
+		img.assignTo(img, CV_32FC1);///转换数据类型
+		//float *im = (float*)malloc(img.cols*img.rows*sizeof(float));兼容vlfeat的接口进行数据转换
+		//for (int i = 0; i < img.rows; i++)
+		//	for (int j = 0; j < img.cols; j++)
+		//		im[i*img.cols + j] = float(img.at<uchar>(i, j));
+		float *im = (float*)img.ptr();///直接引用数据，指针无需释放
 		//-- set dsift parameters
 		//	8.0f,     //initFeatureScale: 
 		int featureScale = 8.0;
@@ -183,7 +183,7 @@ namespace vlad{
 		}
 		descriptors = Mat(desV, true).reshape(0, valid_num);
 
-		free(im);
+		//free(im);//只是引用的图的数据不需要自己管理
 	}
 
 	vector<float> getVector(const Mat &_t1f)
@@ -239,22 +239,22 @@ namespace vlad{
 			assignments,
 			0);
 
-		vector<float> vladFea(feature_dim*clusterNum, 0);
+		//vector<float> vladFea(feature_dim*clusterNum, 0);
+		vector<float> vladFea(enc, enc + feature_dim*clusterNum);///替代元素的复制环节
 		//TODO: find a way to initial the vector directorly
-		memcpy(vladFea.data(), enc, feature_dim*clusterNum*sizeof(float));
+		//memcpy(vladFea.data(), enc, feature_dim*clusterNum*sizeof(float));
 		vl_free(dists);
 		vl_free(assignments);
 		vl_free(idx_v);
 		vl_free(enc);
-
 		return vladFea;
 	}
 
 
 	void extSparseVlSiftDes(Mat &sImg, Mat& descriptors)
 	{
-		float *descriptor = NULL;
-		float *keyPos = NULL;
+		float *descriptor = nullptr;
+		float *keyPos = nullptr;
 		int ipNum = 0;
 
 		cv::Mat Image;
@@ -289,7 +289,7 @@ namespace vlad{
 
 		//转换类型
 		Image.assignTo(Image, CV_32FC1);
-		ImageData = (float*)(Image.data);///usding this funtion to replace the next one code block
+		ImageData = (float*)(Image.ptr());///usding this funtion to replace the next one code block
 		/*for (i = 0; i < Image.rows; i++)
 		{
 			for (j = 0; j < Image.cols; j++)
@@ -373,7 +373,7 @@ namespace vlad{
 		descriptor = nullptr;
 		vl_sift_delete(SiftFilt);
 		//delete[] ImageData;
-		ImageData = nullptr;
+		//ImageData = nullptr;
 
 	}
 	PCA getPCAmodel(string trainlistfile,int maxComponents)
@@ -419,8 +419,14 @@ namespace vlad{
 	const PCA& loadPCAmodel(const string pcafilepath)
 	{
 		FileStorage pcafile(pcafilepath, FileStorage::READ);
+		if (!pcafile.isOpened())
+		{
+			cout << "can not opencv the pcafiel" << endl;
+		}
 		PCA pca;
-		pca.mean = 1;
+		pcafile["mean"]>>pca.mean;
+		pcafile["eigenvectors"] >> pca.eigenvectors;
+		pcafile["eigenvalues"] >> pca.eigenvalues;
 		return pca;
 		
 	}
@@ -464,8 +470,12 @@ namespace vlad{
 		ifstream inputtrainlistF(trainlistfile.c_str());
 		// load model 
 		Mat mlModel;
-		load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel, "SP");
-
+		try{
+			load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel, "SP");
+		}
+		catch (...){
+			std:: cout << "can not load the reduce matrix" << endl;
+		}
 		ofstream outputF("vlsift_tmp.fea");
 		string line;
 		int cnt = 0;
