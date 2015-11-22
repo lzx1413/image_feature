@@ -1,4 +1,8 @@
 #include "utls.h"
+#include <opencv2/cudaarithm.hpp>
+#include <Eigen/Eigen>
+#define USE_OPENCV_MAT 
+using Matric_DDF = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 void L2NormFeature(Mat& smat, int rowidx)
 {
 	int des_dim = smat.cols;
@@ -97,13 +101,24 @@ bool load_metric_model(string filePath, cv::Mat& ml_model,string method)
 	}
 	return true;
 }
-
-void do_metric(const Mat& mlModel, Mat& smat, Mat& dmat)
+//TODO: 考虑把归一化单独拿出来
+void do_metric( Mat& Model, Mat& data, Mat& result)
 {
 	///L2 Norm
-	L2NormFeature(smat);
+	///L2NormFeature(smat);
 	///reduction
-	cv::gemm(smat, mlModel, 1.0, 0.0, 0.0, dmat);
+#ifdef USE_OPENCV_MAT
+
+	cv::gemm(data, Model, 1.0, 0.0, 0.0, result);
+#else
+
+	Eigen::Map<Matric_DDF> e_data(data.ptr<float>(), data.rows, data.cols);
+	Eigen::Map<Matric_DDF> e_model(Model.ptr<float>(), Model.rows, Model.cols);
+
+	Matric_DDF e_result = e_data*e_model;
+	result = Mat(e_result.rows(), e_result.cols(), CV_32FC1, e_result.data());
+#endif
+	
 }
 Mat patchWiseSubtraction(Mat sImg)
 {

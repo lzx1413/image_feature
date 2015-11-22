@@ -7,6 +7,7 @@ public:
 	MethodTimeResume(const MethodTimeResume&) = delete;
 	MethodTimeResume& operator =(const MethodTimeResume&) = delete;
 	~MethodTimeResume();
+    void testMatrixMulti();
 	void test();
 private:
 	string time_log_file;

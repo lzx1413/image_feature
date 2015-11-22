@@ -1,11 +1,15 @@
 #include "vladmethods.h"
 #include <iostream>
 #include <fstream>
+#include <limits.h>
+#include <Eigen/Eigen>
 using namespace std;
-const static int NUMBER_OF_IMAGES = 100;
+const static int NUMBER_OF_IMAGES_TO_TRAIN = 100;
+const static int NUMBER_OF_IMAGES_TO_TEST = 100;
 const static string PATH_OF_WORK = "D:/E/work/dressplus/code/temp/";
 const static int SELECT_NUM = 1000;
 const static int  FEA_DIM = 32;
+const static int NUMBER_OF_IMAGES_TO_PCA = 100;
 namespace vlad{
 
 	void saveGmmModel(const char * modelFile, VlGMM * gmm)
@@ -372,6 +376,54 @@ namespace vlad{
 		ImageData = nullptr;
 
 	}
+	PCA getPCAmodel(string trainlistfile,int maxComponents)
+	{
+		ifstream inputtrainlistF(trainlistfile.c_str());
+		string line;
+		int cnt = 0;
+		int img_number = 0;
+		Mat descriptor_set;
+		while (getline(inputtrainlistF, line))
+		{
+			try{
+				if (cnt++ % 100 == 0)
+					cout << "proc " << cnt << endl;
+				if (img_number > NUMBER_OF_IMAGES_TO_PCA)
+				{
+					break;
+				}
+				img_number++;
+				srand((unsigned)getTickCount());
+
+				Mat img = imread("D:/E/work/dressplus/code/data/fvtraindata/" + line, 0);
+				if (img.empty() || img.cols < 64 || img.rows < 64)
+					continue;
+				double t = (double)cv::getTickCount();
+				Mat descriptors;
+				extDenseVlSiftDes(img, descriptors);
+				t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+				std::cout << t << " s" << std::endl;
+				descriptor_set.push_back(descriptors);
+			}
+
+			catch (...){
+				cout << "there are something wrong with picture" << "D:/E/work/dressplus/code/data/fvtraindata/" << line << endl;
+				continue;
+			}
+		}
+		PCA pca(descriptor_set, Mat(), PCA::DATA_AS_ROW, maxComponents);
+		FileStorage pcafile("data/pca_model.yml", FileStorage::WRITE);
+		pca.write(pcafile);
+		return pca;
+	}
+	const PCA& loadPCAmodel(const string pcafilepath)
+	{
+		FileStorage pcafile(pcafilepath, FileStorage::READ);
+		PCA pca;
+		pca.mean = 1;
+		return pca;
+		
+	}
 
 	PCA compressPCA(const Mat& pcaset, int maxComponents,
 		const Mat& testset, Mat& compressed)
@@ -424,7 +476,7 @@ namespace vlad{
 			try{
 				if (cnt++ % 100 == 0)
 					cout << "proc " << cnt << endl;
-				if (img_number > NUMBER_OF_IMAGES)
+				if (img_number > NUMBER_OF_IMAGES_TO_TRAIN)
 				{
 					break;
 				}
@@ -565,7 +617,7 @@ namespace vlad{
 		{
 			if (cnt++ % 100 == 0)
 				cout << "proc " << cnt << endl;
-			if (img_number > NUMBER_OF_IMAGES)
+			if (img_number > NUMBER_OF_IMAGES_TO_TEST)
 			{
 				//break;
 			}

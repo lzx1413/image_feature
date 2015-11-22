@@ -1,11 +1,11 @@
 #ifndef VLADMETHODS_H
-#include <vlad.h>
-#include <fisher.h>
-#include <kmeans.h>
-#include <gmm.h>
-#include <dsift.h>
-#include <sift.h>
-#include <vlad.h>
+#include <vl/vlad.h>
+#include <vl/fisher.h>
+#include <vl/kmeans.h>
+#include <vl/gmm.h>
+#include <vl/dsift.h>
+#include <vl/sift.h>
+#include <vl/vlad.h>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/xfeatures2d.hpp>
@@ -37,5 +37,6 @@ namespace vlad{
 	void ExitTheSiftFeature(string trainlistfile);
 	void TrainVladModel();
 	int TestVladModel(string testlistfile);
+	PCA getPCAmodel(string trainlistfile, int maxComponents);
 }
 #endif // !VLADMETHODS_H

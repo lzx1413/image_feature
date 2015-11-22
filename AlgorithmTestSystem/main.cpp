@@ -9,14 +9,14 @@
 #include <iostream>
 #include <assert.h>
 #include <ctime>
-
-//Include the files from the vl
+#include <Eigen/Eigen>
 #include "utls.h"
 #include "vladmethods.h"
 #include "encode2binary.h"
 #include "MethodTimeResume.h"
 using namespace std;
 using namespace cv;
+using Eigen::MatrixXd;
 void help()
 {
 	cout << "Ussage:--trainlist <trianlist \n\t --testlist <testlist>" << endl;
@@ -71,7 +71,9 @@ int main(int argc, char* argv[])
 	MethodTimeResume timetest("time.log");
 	timetest.test();
 	getchar();
-	return 0;
+
+	//vlad::getPCAmodel(trainlistfile, 32);
+	
 }
 
 
