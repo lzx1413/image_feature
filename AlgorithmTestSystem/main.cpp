@@ -12,7 +12,7 @@
 #include <Eigen/Eigen>
 #include "utls.h"
 #include "vladmethods.h"
-#include "encode2binary.h"
+#include "encode2Bianry.hpp"
 #include "MethodTimeResume.h"
 using namespace std;
 using namespace cv;
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 	}
     ///	vlad::ExitTheSiftFeature(trainlistfile);
 	///vlad::TrainVladModel();
-	vlad::TestVladModel(testlistfile);
+	//vlad::TestVladModel(testlistfile);
     
 	/*Mat rawdata = Mat(1, 3, CV_32FC1);
 	rawdata.setTo(1);
@@ -68,8 +68,8 @@ int main(int argc, char* argv[])
 			cout << i << endl;
 		}
 	}*/
-	//MethodTimeResume timetest("time.log");
-	//timetest.test();
+	MethodTimeResume timetest("time.log");
+	timetest.test();
 	getchar();
 
 	//vlad::getPCAmodel(trainlistfile, 32);

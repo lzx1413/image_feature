@@ -12,8 +12,7 @@
 
 #include "utls.h"
 namespace vlad{
-	/**
-	*保存混合高斯模型相关参数
+	/**@brief 保存混合高斯模型相关参数
 	*@param modelFile 保存路径及文件名
 	*@param gmm GMM模型
 	*/
@@ -21,8 +20,7 @@ namespace vlad{
 	void loadGmmModel(const char * modelFile, VlGMM *& gmm, vl_size & dimension, vl_size & numClusters);
 	void loadKmeansModel(const char * modelFile, float*& km, vl_size & dimension, vl_size & numClusters);
 	void saveKmeansModel(const char * modelFile, VlKMeans * km);
-	/**
-	*用于产生大量sift特征
+	/**@brief 用于产生大量sift特征
 	*@param sImg 输入图像
 	*@param descriptors 图像中产生的特征
 	*/

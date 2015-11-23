@@ -1,5 +1,5 @@
 #pragma once
-#include "encode2binary.h"
+#include "encode2Bianry.hpp"
 class MethodTimeResume
 {
 public:

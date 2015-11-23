@@ -63,8 +63,7 @@ void RootNormFeature(vector<float>& sdes)
 	for (int kk = 0; kk < des_dim; ++kk)
 		sdes[kk] = sdes[kk] < 0 ? -1 * sqrt(-1 * sdes[kk] / total) : sqrt(sdes[kk] / total);
 }
-/**
-*此方法用于载入模型矩阵，格式第一行两个数字是行数和列数，都入后转化为float型
+/**@brief 此方法用于载入模型矩阵，格式第一行两个数字是行数和列数，都入后转化为float型
 *@param filePath 矩阵路径及文件名
 *@param ml_model 输出矩阵
 */
@@ -102,7 +101,7 @@ bool load_metric_model(string filePath, cv::Mat& ml_model,string method)
 	return true;
 }
 //TODO: 考虑把归一化单独拿出来
-void do_metric( Mat& Model, Mat& data, Mat& result)
+void do_metric( Mat& Model, InputArray& data, Mat& result)
 {
 	///L2 Norm
 	///L2NormFeature(smat);
@@ -111,7 +110,7 @@ void do_metric( Mat& Model, Mat& data, Mat& result)
 
 	cv::gemm(data, Model, 1.0, 0.0, 0.0, result);
 #else
-
+	Mat data_mat = data.getMat();
 	Eigen::Map<Matric_DDF> e_data(data.ptr<float>(), data.rows, data.cols);
 	Eigen::Map<Matric_DDF> e_model(Model.ptr<float>(), Model.rows, Model.cols);
 
