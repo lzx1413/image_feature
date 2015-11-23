@@ -489,12 +489,24 @@ namespace vlad{
 			std:: cout << "can not load the reduce matrix" << endl;
 		}
 		ofstream outputF("vlsift_tmp.fea");
-		string line;
+		string imagename;
 		int cnt = 0;
 		int img_number = 0;
 		Mat descriptor_set;
-		while (getline(inputtrainlistF, line))
-		{
+		vector<string> trainlist;
+		while (getline(inputtrainlistF, imagename))
+			trainlist.push_back(imagename);
+#ifdef linux
+#pragma omp parallel for
+
+
+		for (string line:trainlist)^M
+		{^M
+#else // linux
+		for (string line:trainlist)
+		{ 
+#endif
+	
 			try{
 				if (cnt++ % 100 == 0)
 					cout << "proc " << cnt << endl;
@@ -505,7 +517,7 @@ namespace vlad{
 				img_number++;
 				srand((unsigned)getTickCount());
 
-				Mat img = imread("D:/E/work/dressplus/code/data/fvtraindata/" + line, 0);
+				Mat img = imread(PATH_OF_IMAGE + line, 0);
 				if (img.empty() || img.cols < 64 || img.rows < 64)
 					continue;
 				double t = (double)cv::getTickCount();
@@ -531,7 +543,7 @@ namespace vlad{
 				}
 			}
 			catch (...){
-				cout << "there are something wrong with picture" << "D:/E/work/dressplus/code/data/fvtraindata/" << line << endl;
+				cout << "there are something wrong with picture" << PATH_OF_IMAGE<< line << endl;
 				continue;
 			}
 #endif//USE_PCA
@@ -632,11 +644,22 @@ namespace vlad{
 
 		//------
 		ofstream outputF("vlad_sift32.test.fea");
-		string line;
+		string imagename;
 		int cnt = 0;
 		int img_number = 0;
-		while (getline(inputF, line))
+		vector<string> trainlist;
+		while (getline(inputF, imagename))
+			trainlist.push_back(imagename);
+#ifdef linux
+#pragma omp parallel for
+
+
+		for (string line : trainlist) ^ M
+		{ ^M
+#else // linux
+		for (string line : trainlist)
 		{
+#endif{
 			if (cnt++ % 100 == 0)
 				cout << "proc " << cnt << endl;
 			if (img_number > NUMBER_OF_IMAGES_TO_TEST)
@@ -675,11 +698,10 @@ namespace vlad{
 				outputF << endl;
 			}
 			catch (...){
-				cout << "there are something wrong with picture" << "D:/E/work/dressplus/code/data/fvtraindata/" << line << endl;
+				cout << "there are something wrong with picture" << PATH_OF_IMAGE << line << endl;
 				continue;
 			}
 		}
-
 		vl_kmeans_delete(kmeans);
 		inputF.close();
 		outputF.close();

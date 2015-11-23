@@ -1,0 +1,2 @@
+path_of_work=D:/E/work/dressplus/code/temp/
+path_of_image=D:/E/work/dressplus/code/data/fvtraindata/
