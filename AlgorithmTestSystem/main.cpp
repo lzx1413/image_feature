@@ -12,7 +12,6 @@
 #include <Eigen/Eigen>
 #include "utls.h"
 #include "vladmethods.h"
-#include "encode2Bianry.hpp"
 #include "MethodTimeResume.h"
 using namespace std;
 using namespace cv;
@@ -43,7 +42,8 @@ int main(int argc, char* argv[])
 		}
 
 	}
-    ///	vlad::ExitTheSiftFeature(trainlistfile);
+	    vlad::configure();
+    	vlad::ExitTheSiftFeature(trainlistfile);
 	///vlad::TrainVladModel();
 	//vlad::TestVladModel(testlistfile);
     

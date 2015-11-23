@@ -3,15 +3,27 @@
 #include <fstream>
 #include <limits.h>
 #include <Eigen/Eigen>
+#include "Config.h"
 using namespace std;
 const static int NUMBER_OF_IMAGES_TO_TRAIN = 100;
 const static int NUMBER_OF_IMAGES_TO_TEST = 100;
-const static string PATH_OF_WORK = "D:/E/work/dressplus/code/temp/";
+static string PATH_OF_WORK = "D:/E/work/dressplus/code/temp/";
+static string PATH_OF_IMAGE = " ";
 const static int SELECT_NUM = 1000;
 const static int  FEA_DIM = 32;
 const static int NUMBER_OF_IMAGES_TO_PCA = 100;
 namespace vlad{
-
+	/**@brief make some configure works such as the paths
+	*...
+	*/
+	void configure()
+	{
+		const char ConfigFile[] = "Config.txt";
+		Config configSettings(ConfigFile);
+		PATH_OF_IMAGE = configSettings.Read("path_of_image", PATH_OF_IMAGE);
+		PATH_OF_WORK = configSettings.Read("path_of_work", PATH_OF_WORK);
+	
+	}
 	void saveGmmModel(const char * modelFile, VlGMM * gmm)
 	{
 		vl_size d, cIdx;
@@ -395,7 +407,7 @@ namespace vlad{
 				img_number++;
 				srand((unsigned)getTickCount());
 
-				Mat img = imread("D:/E/work/dressplus/code/data/fvtraindata/" + line, 0);
+				Mat img = imread(PATH_OF_IMAGE + line, 0);
 				if (img.empty() || img.cols < 64 || img.rows < 64)
 					continue;
 				double t = (double)cv::getTickCount();
@@ -633,7 +645,7 @@ namespace vlad{
 			}
 			try{
 				img_number++;
-				Mat imgS = imread("D:/E/work/dressplus/code/data/fvtraindata/" + line, 0);
+				Mat imgS = imread(PATH_OF_IMAGE + line, 0);
 				if (imgS.empty() || imgS.cols < 64 || imgS.rows < 64)
 					continue;
 				// norm image

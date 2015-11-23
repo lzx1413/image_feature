@@ -1,5 +1,7 @@
 #pragma once
-#include "encode2Bianry.hpp"
+#include <iostream>
+#include <fstream>
+using namespace std;
 class MethodTimeResume
 {
 public:
