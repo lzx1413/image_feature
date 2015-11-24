@@ -12,7 +12,7 @@
 
 #include "utls.h"
 namespace vlad{
-	void configure();
+	void configure(int clusternum,int featuredim);
 	/**@brief 保存混合高斯模型相关参数
 	*@param modelFile 保存路径及文件名
 	*@param gmm GMM模型

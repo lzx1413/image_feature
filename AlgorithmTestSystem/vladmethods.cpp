@@ -1,28 +1,33 @@
 #include "vladmethods.h"
 #include <iostream>
 #include <fstream>
-#include <limits.h>
-#include <Eigen/Eigen>
 #include "Config.h"
+//TODO: 省略中间数据的存储和读取实现直接的使用计算
 using namespace std;
 const static int NUMBER_OF_IMAGES_TO_TRAIN = 100;
 const static int NUMBER_OF_IMAGES_TO_TEST = 100;
 static string PATH_OF_WORK = "D:/E/work/dressplus/code/temp/";
-static string PATH_OF_IMAGE = " ";
+static string PATH_OF_IMAGE = "D:/E/work/dressplus/code/data/fvtraindata/";
+static string NAME_OF_FEATUREFILE = "vladfeature.txt";
 const static int SELECT_NUM = 1000;
-const static int  FEA_DIM = 32;
+static int  FEA_DIM = 32;
+static int NUMBER_OF_CLUSTERS = 512;
 const static int NUMBER_OF_IMAGES_TO_PCA = 100;
+
+#define USE_PCA
 namespace vlad{
 	/**@brief make some configure works such as the paths
 	*...
 	*/
-	void configure()
+	void configure(int cluster_number,int feature_dimension)
 	{
+		FEA_DIM = feature_dimension;
+		NUMBER_OF_CLUSTERS = cluster_number;
+
 		const char ConfigFile[] = "Config.txt";
 		Config configSettings(ConfigFile);
 		PATH_OF_IMAGE = configSettings.Read("path_of_image", PATH_OF_IMAGE);
 		PATH_OF_WORK = configSettings.Read("path_of_work", PATH_OF_WORK);
-	
 	}
 	void saveGmmModel(const char * modelFile, VlGMM * gmm)
 	{
@@ -208,6 +213,7 @@ namespace vlad{
 	vector<float> genDescriptorReduced(Mat& descriptors, Mat& mlModel)
 	{
 		Mat dmat;
+		L2NormFeature(descriptors);
 		do_metric(mlModel, descriptors, dmat);
 		return getVector(dmat);
 	}
@@ -388,13 +394,14 @@ namespace vlad{
 		//ImageData = nullptr;
 
 	}
-	PCA getPCAmodel(string trainlistfile,int maxComponents)
+	PCA getPCAmodel(string trainlistfile,int maxComponents=FEA_DIM)
 	{
 		ifstream inputtrainlistF(trainlistfile.c_str());
 		string line;
 		int cnt = 0;
 		int img_number = 0;
 		Mat descriptor_set;
+		cout << "start process the train image to get the PCA model" << endl;
 		while (getline(inputtrainlistF, line))
 		{
 			try{
@@ -419,27 +426,27 @@ namespace vlad{
 			}
 
 			catch (...){
-				cout << "there are something wrong with picture" << "D:/E/work/dressplus/code/data/fvtraindata/" << line << endl;
+				cout << "there are something wrong with picture" << PATH_OF_IMAGE<< line << endl;
 				continue;
 			}
 		}
 		PCA pca(descriptor_set, Mat(), PCA::DATA_AS_ROW, maxComponents);
 		FileStorage pcafile("data/pca_model.yml", FileStorage::WRITE);
-		pca.write(pcafile);
+		pcafile << "mean" << pca.mean;
+		pcafile << "e_vectors" << pca.eigenvectors;
+		pcafile << "e_values" << pca.eigenvalues;
 		return pca;
 	}
-	const PCA& loadPCAmodel(const string pcafilepath)
+	 void  loadPCAmodel(const string pcafilepath,PCA& pca)
 	{
 		FileStorage pcafile(pcafilepath, FileStorage::READ);
 		if (!pcafile.isOpened())
 		{
 			cout << "can not opencv the pcafiel" << endl;
 		}
-		PCA pca;
 		pcafile["mean"]>>pca.mean;
-		pcafile["eigenvectors"] >> pca.eigenvectors;
-		pcafile["eigenvalues"] >> pca.eigenvalues;
-		return pca;
+		pcafile["e_vectors"] >> pca.eigenvectors;
+		pcafile["e_values"] >> pca.eigenvalues;
 		
 	}
 
@@ -481,6 +488,10 @@ namespace vlad{
 	{
 		ifstream inputtrainlistF(trainlistfile.c_str());
 		// load model 
+#ifdef USE_PCA
+		PCA pca;
+		loadPCAmodel("D:/E/work/dressplus/code/AlgorithmTestSystem/AlgorithmTestSystem/data/pca_model.yml",pca);
+#else
 		Mat mlModel;
 		try{
 			load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel, "SP");
@@ -488,6 +499,7 @@ namespace vlad{
 		catch (...){
 			std:: cout << "can not load the reduce matrix" << endl;
 		}
+#endif
 		ofstream outputF("vlsift_tmp.fea");
 		string imagename;
 		int cnt = 0;
@@ -526,10 +538,13 @@ namespace vlad{
 				t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
 				std::cout << t << " s" << std::endl;
 #ifdef USE_PCA
+				L2NormFeature(descriptors);
+				Mat reduced_descriptors = pca.project(descriptors);
+				vector<float> normfea = getVector(reduced_descriptors);
 
-				descriptor_set.push_back(descriptors);
 #else
-				vector<float> normfea = vlad::genDescriptorReduced(descriptors, mlModel);
+		        vector<float> normfea = vlad::genDescriptorReduced(descriptors, mlModel);
+#endif
 				cout << descriptors.rows << endl;
 				int len = normfea.size() / FEA_DIM;
 				assert(normfea.size() % FEA_DIM == 0);
@@ -546,25 +561,8 @@ namespace vlad{
 				cout << "there are something wrong with picture" << PATH_OF_IMAGE<< line << endl;
 				continue;
 			}
-#endif//USE_PCA
 		}
 		cout << "proc " << cnt << endl;
-#ifdef USE_PCA
-		L2NormFeature(descriptor_set);
-		Mat descriptor_set_after_pca;
-		compressPCA(descriptor_set, 32, descriptor_set, descriptor_set_after_pca);
-		for (auto i = 0; i < descriptor_set_after_pca.rows; ++i)
-		{
-			for (auto c = 0; c < descriptor_set_after_pca.cols; ++c)
-			{
-				auto data = descriptor_set_after_pca.at<float>(i, c);
-				outputF << data;
-			}
-			outputF << endl;
-		}
-
-#endif // USE_PCA
-
 		inputtrainlistF.close();
 		outputF.close();
 	}
@@ -574,7 +572,7 @@ namespace vlad{
 		vl_set_num_threads(0); /* use the default number of threads */
 
 		vl_size dimension = FEA_DIM;
-		vl_size numClusters = 512;
+		vl_size numClusters = NUMBER_OF_CLUSTERS;
 		vl_size maxiter = 128;
 		vl_size maxrep = 1;
 
@@ -643,7 +641,7 @@ namespace vlad{
 		VlKMeans *kmeans = vlad::initVladEngine("vlad128_sift32.model", dimension, numClusters);
 
 		//------
-		ofstream outputF("vlad_sift32.test.fea");
+		ofstream outputF(NAME_OF_FEATUREFILE);
 		string imagename;
 		int cnt = 0;
 		int img_number = 0;

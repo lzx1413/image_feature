@@ -24,6 +24,8 @@ int main(int argc, char* argv[])
 {
 	string trainlistfile;
 	string testlistfile;
+	int cluster_num = 512;
+	int feature_dimention = 32;
 	if (argc == 1)
 	{
 		help();
@@ -40,12 +42,21 @@ int main(int argc, char* argv[])
 		{
 			testlistfile = argv[++i];
 		}
+		else if (string(argv[i]) == "--clusternum")
+		{
+			cluster_num = std::stoi(argv[++i]);
+		}
+		else if (string(argv[i]) == "--featuredim")
+		{
+			feature_dimention = std::stoi(argv[++i]);
+		}
 
 	}
-	    vlad::configure();
+	    vlad::configure(cluster_num,feature_dimention);
+		//vlad::getPCAmodel(trainlistfile,32);
     	vlad::ExitTheSiftFeature(trainlistfile);
-	///vlad::TrainVladModel();
-	//vlad::TestVladModel(testlistfile);
+	    vlad::TrainVladModel();
+	    vlad::TestVladModel(testlistfile);
     
 	/*Mat rawdata = Mat(1, 3, CV_32FC1);
 	rawdata.setTo(1);
@@ -68,9 +79,9 @@ int main(int argc, char* argv[])
 			cout << i << endl;
 		}
 	}*/
-	MethodTimeResume timetest("time.log");
-	timetest.test();
-	getchar();
+	//MethodTimeResume timetest("time.log");
+	//timetest.test();
+	//getchar();
 
 	//vlad::getPCAmodel(trainlistfile, 32);
 	
