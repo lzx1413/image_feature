@@ -51,17 +51,24 @@ void split_words(const string& src, const string& separator, vector<string>& des
 	substring = str.substr(start);
 	dest.push_back(substring);
 }
-void RootNormFeature(vector<float>& sdes)
+/**@brief this normlization can avoid the balabala
+*and the data can be mat vector vector<vector<>> but it only support float/CV_32F1 now
+*/
+
+void RootNormFeature(InputOutputArray& sdes)
 {
-	int des_dim = sdes.size();
-	float total = 0.0;
-	for (int kk = 0; kk < des_dim; ++kk)
+	Mat sdes_mat = sdes.getMat();
+	for (int i = 0; i < sdes_mat.rows; ++i)
 	{
-		total += fabs(sdes[kk]);
-	}
-	total = total < 0.00001 ? 1 : total;
-	for (int kk = 0; kk < des_dim; ++kk)
-		sdes[kk] = sdes[kk] < 0 ? -1 * sqrt(-1 * sdes[kk] / total) : sqrt(sdes[kk] / total);
+		float total = 0.0;
+		for (int j = 0; j< sdes_mat.cols; ++j)
+		{
+			total += fabs(sdes_mat.at<float>(i,j));
+		}
+		total = total < 0.00001 ? 1 : total;
+		for (int kk = 0; kk < sdes_mat.cols; ++kk)
+			sdes_mat.at<float>(i,kk)= sdes_mat.at<float>(i,kk) < 0 ? -100 * sqrt(-1 * sdes_mat.at<float>(i,kk)/ total) : 100*sqrt(sdes_mat.at<float>(i,kk)/ total);
+    }
 }
 /**@brief 此方法用于载入模型矩阵，格式第一行两个数字是行数和列数，都入后转化为float型
 *@param filePath 矩阵路径及文件名

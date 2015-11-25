@@ -1,17 +1,13 @@
 #ifndef LOCAL_FEATURE_HPP
 #define LOCAL_FEATURE_HPP
 #include <opencv2/opencv.hpp>
-#include <vl/kmeans.h>
-#include <vl/gmm.h>
 #include <vl/dsift.h>
 #include <vl/sift.h>
-#include <vl/vlad.h>
 
 #include "utls.h"
 vector<float> genDescriptorReduced(Mat& descriptors, Mat& mlModel)
 {
 	Mat dmat;
-	L2NormFeature(descriptors);
 	do_metric(mlModel, descriptors, dmat);
 	return getVector(dmat);
 }
@@ -71,6 +67,7 @@ void extDenseVlSiftDes(Mat& sImg, Mat& descriptors)
 		vl_dsift_delete(filter);
 	}
 	descriptors = Mat(desV, true).reshape(0, valid_num);
+	RootNormFeature(descriptors);
 
 	//free(im);//只是引用的图的数据不需要自己管理
 }
@@ -191,7 +188,7 @@ void extSparseVlSiftDes(Mat &sImg, Mat& descriptors)
 			descriptors.at<float>(i, ii) = descriptor[i*FEATUREDIM + ii];
 		}
 	}
-
+	RootNormFeature(descriptors);///noramlize the  Feature
 	delete[] descriptor;
 	descriptor = nullptr;
 	vl_sift_delete(SiftFilt);

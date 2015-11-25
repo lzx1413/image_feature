@@ -177,7 +177,7 @@ namespace vlad{
 		// load model 
 #ifdef USE_PCA
 		PCA pca;
-		loadPCAmodel("D:/E/work/dressplus/code/AlgorithmTestSystem/AlgorithmTestSystem/data/pca_model.yml",pca);
+		loadPCAmodel("data/pca_model.yml",pca);
 #else
 		Mat mlModel;
 		try{
@@ -225,7 +225,6 @@ namespace vlad{
 				t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
 				std::cout << t << " s" << std::endl;
 #ifdef USE_PCA
-				L2NormFeature(descriptors);
 				Mat reduced_descriptors = pca.project(descriptors);
 				vector<float> normfea = getVector(reduced_descriptors);
 
@@ -253,17 +252,18 @@ namespace vlad{
 		inputtrainlistF.close();
 		outputF.close();
 	}
-	void TrainVladModel()
+	//TODO: this function actually is a keams training function so I can move it to clusteranaysis.hpp if needed
+   VlKMeans* getKmeansModel(int cluster_num,int feature_dim)
 	{
 		// set params
 		vl_set_num_threads(0); /* use the default number of threads */
 
-		vl_size dimension = FEA_DIM;
-		vl_size numClusters = NUMBER_OF_CLUSTERS;
+		vl_size dimension = feature_dim;
+		vl_size numClusters = cluster_num;
 		vl_size maxiter = 128;
 		vl_size maxrep = 1;
 
-		VlKMeans * kmeans = 0;
+	//	VlKMeans * kmeans = 0;
 		vl_size maxiterKM = 64;
 		vl_size ntrees = 3;
 		vl_size maxComp = 64;
@@ -274,6 +274,7 @@ namespace vlad{
 		cout << endl;
 
 		// init kmeans status
+		VlKMeans* kmeans;
 		kmeans = vl_kmeans_new(VL_TYPE_FLOAT, VlDistanceL2);
 		vl_kmeans_set_verbosity(kmeans, 1);
 		vl_kmeans_set_max_num_iterations(kmeans, maxiterKM);
@@ -308,30 +309,32 @@ namespace vlad{
 		cout << "Train kmeans model successful" << endl;
 		saveKmeansModel(kmeansF.c_str(), kmeans);
 		cout << "Save model to " << kmeansF << endl;
-
-		if (kmeans) {
-			vl_kmeans_delete(kmeans);
-		}
+		return kmeans;
 	}
+
 
 	void  TestVladModel(string testlistfile)
 	{
+
 		ifstream inputF(testlistfile.c_str());
 		// load model 
 #ifdef USE_PCA
 		PCA pca;
-		loadPCAmodel("D:/E/work/dressplus/code/AlgorithmTestSystem/AlgorithmTestSystem/data/pca_model.yml", pca);
+		loadPCAmodel("data/pca_model.yml", pca);
 #else
 		Mat mlModel;
 		bool flag = load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel, "SP");
 		if (!flag)
 			return -1;
 #endif
-		// load VLAD model
-		vl_size dimension = -1;
-		vl_size numClusters = -1;
-		VlKMeans *kmeans = vlad::initVladEngine("vlad128_sift32.model", dimension, numClusters);
-
+		//load VLAD model
+		//vl_size dimension = -1;
+		//vl_size numClusters = -1;
+		//VlKMeans *kmeans = vlad::initVladEngine("vlad128_sift32.model", dimension, numClusters);
+		//VlKMeans *kmeans = new VlKMeans();
+		VlKMeans*kmeans=getKmeansModel(NUMBER_OF_CLUSTERS, FEA_DIM);
+		vl_size dimension = vl_kmeans_get_dimension(kmeans);
+		vl_size numClusters = vl_kmeans_get_num_centers(kmeans);
 		//------
 		ofstream outputF(NAME_OF_FEATUREFILE);
 		string imagename;
@@ -372,7 +375,6 @@ namespace vlad{
 				//extDenseVlSiftDes(img, descriptors);
 				extSparseVlSiftDes(img, descriptors);
 #ifdef USE_PCA
-				L2NormFeature(descriptors);
 				Mat reduced_descriptors = pca.project(descriptors);
 				vector<float> normfea = getVector(reduced_descriptors);
 

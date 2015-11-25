@@ -52,12 +52,21 @@ int main(int argc, char* argv[])
 		}
 
 	}
-	    vlad::configure(cluster_num,feature_dimention);
+	    //vlad::configure(cluster_num,feature_dimention);
 		//vlad::getPCAmodel(trainlistfile,32);
-    	vlad::ExitTheSiftFeature(trainlistfile);
-	    vlad::TrainVladModel();
-	    vlad::TestVladModel(testlistfile);
-    
+    	//vlad::ExitTheSiftFeature(trainlistfile);	
+	   // vlad::TestVladModel(testlistfile);
+	vector<float> feature{ 1, 1, 1, 1, 1, 1 };
+	RootNormFeature(feature);
+	Mat a = Mat::ones(4, 6,CV_32FC1);
+	for (float a:feature)
+	{
+		cout << a << endl;
+	}
+	a.at<float>(0, 0) = 0;
+	RootNormFeature(a);
+	cout << a;
+	getchar();
 	/*Mat rawdata = Mat(1, 3, CV_32FC1);
 	rawdata.setTo(1);
 	cout << rawdata << endl;
