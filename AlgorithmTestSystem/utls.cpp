@@ -3,10 +3,11 @@
 #include <Eigen/Eigen>
 #define USE_OPENCV_MAT 
 using Matric_DDF = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+/**@brief do the l2 normlization to the selected row of the  imput mat 
+*/
 void L2NormFeature(Mat& smat, int rowidx)
 {
 	int des_dim = smat.cols;
-	//L2 norm
 	float total = 0.0;
 	for (int kk = 0; kk < des_dim; kk++)
 	{
@@ -22,7 +23,7 @@ void L2NormFeature(Mat& smat)
 		L2NormFeature(smat, i);
 }
 /**
-*此方法用于将一条string按照给定的分隔符分成string的vector型
+*@brief 此方法用于将一条string按照给定的分隔符分成string的vector型
 *@param src 输入的字符串
 *@param separator 分隔符
 *@param dest 分理出的string数组
@@ -50,7 +51,6 @@ void split_words(const string& src, const string& separator, vector<string>& des
 	substring = str.substr(start);
 	dest.push_back(substring);
 }
-//TODO：do understand after
 void RootNormFeature(vector<float>& sdes)
 {
 	int des_dim = sdes.size();
@@ -103,9 +103,6 @@ bool load_metric_model(string filePath, cv::Mat& ml_model,string method)
 //TODO: 考虑把归一化单独拿出来
 void do_metric( Mat& Model, InputArray& data, Mat& result)
 {
-	///L2 Norm
-	///L2NormFeature(smat);
-	///reduction
 #ifdef USE_OPENCV_MAT
 
 	cv::gemm(data, Model, 1.0, 0.0, 0.0, result);
@@ -158,3 +155,9 @@ Mat patchWiseStdDevDiv(Mat sImg)
 	return dImg;
 }
 
+vector<float> getVector(const Mat &_t1f)
+{
+	Mat t1f;
+	_t1f.convertTo(t1f, CV_32F);
+	return (vector<float>)(t1f.reshape(1, 1));
+}

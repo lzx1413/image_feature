@@ -10,4 +10,5 @@ void split_words(const string& src, const string& separator, vector<string>& des
 void RootNormFeature(vector<float>& sdes);
 bool load_metric_model(string filePath, cv::Mat& ml_model, string method);
 void do_metric(Mat& mlModel, InputArray& smat, Mat& dmat);
+vector<float> getVector(const Mat &_t1f);
 #endif // !UTILS_H
