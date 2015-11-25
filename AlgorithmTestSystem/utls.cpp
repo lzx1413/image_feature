@@ -108,7 +108,7 @@ bool load_metric_model(string filePath, cv::Mat& ml_model,string method)
 	return true;
 }
 //TODO: 考虑把归一化单独拿出来
-void do_metric( Mat& Model, InputArray& data, Mat& result)
+void do_metric( const Mat& Model, InputArray& data, Mat& result)
 {
 #ifdef USE_OPENCV_MAT
 

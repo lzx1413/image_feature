@@ -12,7 +12,7 @@ namespace vlad{
 	vector<float> encodeVladFea(VlKMeans *vladModel, vector<float> rawFea, int feature_dim, int clusterNum);
 	void ExitTheSiftFeature(string trainlistfile);
 	VlKMeans* getKmeansModel(int cluster_num, int feature_dim);
-	void TestVladModel(string testlistfile);
+	void GetVladFeature(string testlistfile);
 	PCA getPCAmodel(string trainlistfile, int maxComponents);
 }
 #endif // !VLADMETHODS_H

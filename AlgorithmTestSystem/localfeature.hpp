@@ -5,7 +5,7 @@
 #include <vl/sift.h>
 
 #include "utls.h"
-vector<float> genDescriptorReduced(Mat& descriptors, Mat& mlModel)
+vector<float> genDescriptorReduced(Mat& descriptors, const Mat& mlModel)
 {
 	Mat dmat;
 	do_metric(mlModel, descriptors, dmat);

@@ -16,7 +16,7 @@ static int  FEA_DIM = 32;
 static int NUMBER_OF_CLUSTERS = 512;
 const static int NUMBER_OF_IMAGES_TO_PCA = 100;
 
-#define USE_PCA
+//#define USE_PCA
 namespace vlad{
 	/**@brief make some configure works such as the paths
 	*...
@@ -229,7 +229,7 @@ namespace vlad{
 				vector<float> normfea = getVector(reduced_descriptors);
 
 #else
-		        vector<float> normfea = vlad::genDescriptorReduced(descriptors, mlModel);
+		        vector<float> normfea = genDescriptorReduced(descriptors, mlModel);
 #endif
 				cout << descriptors.rows << endl;
 				int len = normfea.size() / FEA_DIM;
@@ -311,9 +311,36 @@ namespace vlad{
 		cout << "Save model to " << kmeansF << endl;
 		return kmeans;
 	}
+#ifdef USE_PCA
+   vector<float> VladFeatureEncode(Mat& img, vl_size &dimension, vl_size &numClusters, VlKMeans* kmeans, const PCA&pca)
+#else
+   vector<float> VladFeatureEncode(Mat& img,vl_size &dimension,vl_size &numClusters,VlKMeans* kmeans,const Mat& mlModel)
+#endif
+   {
+	   double t = (double)cv::getTickCount();
+	   Mat descriptors;
+	   //extDenseVlSiftDes(img, descriptors);
+	   extSparseVlSiftDes(img, descriptors);
+#ifdef USE_PCA
+	   Mat reduced_descriptors = pca.project(descriptors);
+	   vector<float> normfea = getVector(reduced_descriptors);
+
+#else
+	   vector<float> normfea = genDescriptorReduced(descriptors, mlModel);
+#endif
+	   int len = normfea.size() / dimension;
+	   assert(normfea.size() % dimension == 0);
+
+	   vector<float> vlf = vlad::encodeVladFea(kmeans, normfea, dimension, numClusters);
+	   t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+	   std::cout << t << " s" << std::endl;
+
+	   assert(dimension*numClusters == vlf.size());
+	   return vlf;
+   }
 
 
-	void  TestVladModel(string testlistfile)
+	void  GetVladFeature(string testlistfile)
 	{
 
 		ifstream inputF(testlistfile.c_str());
@@ -324,8 +351,7 @@ namespace vlad{
 #else
 		Mat mlModel;
 		bool flag = load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel, "SP");
-		if (!flag)
-			return -1;
+		//TODO: add a assert
 #endif
 		//load VLAD model
 		//vl_size dimension = -1;
@@ -369,27 +395,11 @@ namespace vlad{
 				int normHeight = 360.0 / imgS.size().width*imgS.size().height;
 				Mat img;
 				resize(imgS, img, Size(normWidth, normHeight));
-
-				double t = (double)cv::getTickCount();
-				Mat descriptors;
-				//extDenseVlSiftDes(img, descriptors);
-				extSparseVlSiftDes(img, descriptors);
 #ifdef USE_PCA
-				Mat reduced_descriptors = pca.project(descriptors);
-				vector<float> normfea = getVector(reduced_descriptors);
-
+				vector<float>vlf = VladFeatureEncode(img, dimension, numClusters, kmeans, pca);
 #else
-				vector<float> normfea = vlad::genDescriptorReduced(descriptors, mlModel);
+				vector<float>vlf = VladFeatureEncode(img, dimension, numClusters, kmeans, mlModel);
 #endif
-				int len = normfea.size() / dimension;
-				assert(normfea.size() % dimension == 0);
-
-				vector<float> vlf = vlad::encodeVladFea(kmeans, normfea, dimension, numClusters);
-				t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-				std::cout << t << " s" << std::endl;
-
-				assert(dimension*numClusters == vlf.size());
-
 				outputF << line;
 				for (int i = 0; i < vlf.size(); i++)
 					outputF << " " << vlf[i];
