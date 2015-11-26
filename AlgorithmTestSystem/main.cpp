@@ -1,7 +1,3 @@
-// TestVLAD_FV.cpp : 定义控制台应用程序的入口点。
-//
-//include the files form opencv
-
 //stl
 #include <vector>
 #include <string>
@@ -13,6 +9,7 @@
 #include "utls.h"
 #include "vladmethods.h"
 #include "MethodTimeResume.h"
+#include "fishermethods.hpp"
 using namespace std;
 using namespace cv;
 using Eigen::MatrixXd;
@@ -52,10 +49,11 @@ int main(int argc, char* argv[])
 		}
 
 	}
-	    vlad::configure(cluster_num,feature_dimention);
+	    //vlad::configure(cluster_num,feature_dimention);
 		//vlad::getPCAmodel(trainlistfile,32);
     	//vlad::ExitTheSiftFeature(trainlistfile);	
-	   vlad::GetVladFeature(testlistfile);
+	    //vlad::GetVladFeature(testlistfile);
+	FV::GetGMMModel(32, 512);
 	vector<float> feature{ 1, 1, 1, 1, 1, 1 };
 	RootNormFeature(feature);
 	Mat a = Mat::ones(4, 6,CV_32FC1);

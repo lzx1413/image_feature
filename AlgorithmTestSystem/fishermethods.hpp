@@ -25,11 +25,15 @@ static string PATH_OF_IMAGE = "D:/E/work/dressplus/code/data/fvtraindata/";
 static string NAME_OF_FEATUREFILE = "VFfeature.txt";
 static int  FEA_DIM = 32;
 static int NUMBER_OF_CLUSTERS = 512;
-namespace FV{
-	VlGMM* GetGMMModel(int dimension_, int numclusters_)
+class FV{
+	static void configure()
+	{
+
+	}
+	static VlGMM* GetGMMModel(int dimension_, int numclusters_)
 	{
 		vector<float> data_des;
-		ifstream inputFea("TMP.fea");
+		ifstream inputFea("vlsift_tmp.fea");
 		if (!inputFea.is_open())
 			cout << "can not open the data file" << endl;
 
@@ -83,13 +87,13 @@ namespace FV{
 		// run gmm core
 		vl_gmm_cluster(gmm, data_des.data(), data_des.size() / dimension);
 		cout << "Train gmm model successful" << endl;
-		saveGmmModel("/data/gmmmodel.model", gmm);
-        
+		ClusterAnaysis::saveGmmModel("gmmmodel.model", gmm);
+
 	}
 
-	vector<float> encodeFVfeature(VlGMM*gmm, vector<float>&normfea, vl_size numClusters, vl_size dimension)
+	static vector<float> encodeFVfeature(VlGMM*gmm, vector<float>&normfea, vl_size numClusters, vl_size dimension)
 	{
-		if (normfea.size()>0)
+		if (normfea.size() > 0)
 		{
 			int FVfeature_dim = dimension*numClusters * 2;
 			float * enc = (float*)vl_malloc(sizeof(float)*dimension);
@@ -115,13 +119,13 @@ namespace FV{
 		double t = (double)cv::getTickCount();
 		Mat descriptors;
 		//extDenseVlSiftDes(img, descriptors);
-		extSparseVlSiftDes(img, descriptors);
+		LocalFeature::extSparseVlSiftDes(img, descriptors);
 #ifdef USE_PCA
 		Mat reduced_descriptors = pca.project(descriptors);
 		vector<float> normfea = getVector(reduced_descriptors);
 
 #else
-		vector<float> normfea = genDescriptorReduced(descriptors, mlModel);
+		vector<float> normfea = LocalFeature::genDescriptorReduced(descriptors, mlModel);
 #endif
 		int len = normfea.size() / dimension;
 		assert(normfea.size() % dimension == 0);
@@ -130,11 +134,11 @@ namespace FV{
 		t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
 		std::cout << t << " s" << std::endl;
 
-		assert(dimension*numClusters*2 == vlf.size());
+		assert(dimension*numClusters * 2 == vlf.size());
 		return vlf;
 	}
 
-	void  GetFVFeature(string testlistfile)
+	static void  GetFVFeature(string testlistfile)
 	{
 
 		ifstream inputF(testlistfile.c_str());
@@ -165,8 +169,6 @@ namespace FV{
 			trainlist.push_back(imagename);
 #ifdef linux
 #pragma omp parallel for
-
-
 		for (string line : trainlist) ^ M
 		{ ^M
 #else // linux
@@ -192,7 +194,7 @@ namespace FV{
 #ifdef USE_PCA
 				vector<float>vlf = FVFeatureEncode(img, dimension, numClusters, gmm, pca);
 #else
-				vector<float>vlf = FVFeatureEncode(img, dimension, numClusters,gmm, mlModel);
+				vector<float>vlf = FVFeatureEncode(img, dimension, numClusters, gmm, mlModel);
 #endif
 				outputF << line;
 				for (int i = 0; i < vlf.size(); i++)
@@ -208,5 +210,6 @@ namespace FV{
 		inputF.close();
 		outputF.close();
 		}
-		}
+	}
+};
 #endif

@@ -38,7 +38,7 @@ namespace vlad{
 		vl_size dimension=-1;
 		vl_size numClusters=-1;
 		float* vlad_km = nullptr;
-		loadKmeansModel(vlad_km_path.c_str(), vlad_km, dimension, numClusters);
+		ClusterAnaysis::loadKmeansModel(vlad_km_path.c_str(), vlad_km, dimension, numClusters);
 		feature_dim = dimension*numClusters;
 		VlKMeans *kmeans = vl_kmeans_new(VL_TYPE_FLOAT, VlDistanceL2);
 		vl_kmeans_set_centers(kmeans, vlad_km, dimension, numClusters);
@@ -106,7 +106,7 @@ namespace vlad{
 					continue;
 				double t = (double)cv::getTickCount();
 				Mat descriptors;
-				extDenseVlSiftDes(img, descriptors);
+				LocalFeature::extDenseVlSiftDes(img, descriptors);
 				t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
 				std::cout << t << " s" << std::endl;
 				descriptor_set.push_back(descriptors);
@@ -221,7 +221,7 @@ namespace vlad{
 					continue;
 				double t = (double)cv::getTickCount();
 				Mat descriptors;
-				extDenseVlSiftDes(img, descriptors);
+				LocalFeature::extDenseVlSiftDes(img, descriptors);
 				t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
 				std::cout << t << " s" << std::endl;
 #ifdef USE_PCA
@@ -229,7 +229,7 @@ namespace vlad{
 				vector<float> normfea = getVector(reduced_descriptors);
 
 #else
-		        vector<float> normfea = genDescriptorReduced(descriptors, mlModel);
+		        vector<float> normfea = LocalFeature::genDescriptorReduced(descriptors, mlModel);
 #endif
 				cout << descriptors.rows << endl;
 				int len = normfea.size() / FEA_DIM;
@@ -307,7 +307,7 @@ namespace vlad{
 			data_des.size() / dimension,
 			numClusters);
 		cout << "Train kmeans model successful" << endl;
-		saveKmeansModel(kmeansF.c_str(), kmeans);
+		ClusterAnaysis::saveKmeansModel(kmeansF.c_str(), kmeans);
 		cout << "Save model to " << kmeansF << endl;
 		return kmeans;
 	}
@@ -320,13 +320,13 @@ namespace vlad{
 	   double t = (double)cv::getTickCount();
 	   Mat descriptors;
 	   //extDenseVlSiftDes(img, descriptors);
-	   extSparseVlSiftDes(img, descriptors);
+	   LocalFeature::extSparseVlSiftDes(img, descriptors);
 #ifdef USE_PCA
 	   Mat reduced_descriptors = pca.project(descriptors);
 	   vector<float> normfea = getVector(reduced_descriptors);
 
 #else
-	   vector<float> normfea = genDescriptorReduced(descriptors, mlModel);
+	   vector<float> normfea = LocalFeature::genDescriptorReduced(descriptors, mlModel);
 #endif
 	   int len = normfea.size() / dimension;
 	   assert(normfea.size() % dimension == 0);
