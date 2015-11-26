@@ -112,9 +112,9 @@ public:
 		}
 	};
 #ifdef USE_PCA
-	vector<float> FVFeatureEncode(Mat& img, vl_size &dimension, vl_size &numClusters, VlGMM* gmm, const PCA&pca)
+	static vector<float> FVFeatureEncode(Mat& img, vl_size &dimension, vl_size &numClusters, VlGMM* gmm, const PCA&pca)
 #else
-	vector<float> FVFeatureEncode(Mat& img, vl_size &dimension, vl_size &numClusters, VlGMM* gmm, const Mat& mlModel)
+	static vector<float> FVFeatureEncode(Mat& img, vl_size &dimension, vl_size &numClusters, VlGMM* gmm, const Mat& mlModel)
 #endif
 	{
 		double t = (double)cv::getTickCount();
@@ -211,6 +211,5 @@ public:
 		inputF.close();
 		outputF.close();
 		}
-	}
-};
+	};
 #endif

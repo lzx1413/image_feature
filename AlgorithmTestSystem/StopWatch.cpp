@@ -125,7 +125,7 @@ void StopwatchBase::SetName(const char *s)
  */
 void StopwatchBase::SetName(int id)
 {
-  sprintf_s(sw_name, "%d", id);
+  sprintf(sw_name, "%d", id);
 }
 
 /**
