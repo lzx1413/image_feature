@@ -52,11 +52,11 @@ int main(int argc, char* argv[])
 		}
 
 	}
-	    //vlad::configure(cluster_num,feature_dimention);
-		//vlad::getPCAmodel(trainlistfile,32);
-    	//vlad::ExitTheSiftFeature(trainlistfile);	
-	    //vlad::GetVladFeature(testlistfile);
-	FV::GetGMMModel(32, 512);
+	    vlad::configure(cluster_num,feature_dimention);
+		vlad::getPCAmodel(trainlistfile,32);
+    	vlad::ExitTheSiftFeature(trainlistfile);	
+	    vlad::GetVladFeature(testlistfile);
+//	FV::GetGMMModel(32, 512);
 	vector<float> feature{ 1, 1, 1, 1, 1, 1 };
 	RootNormFeature(feature);
 	Mat a = Mat::ones(4, 6,CV_32FC1);

@@ -4,6 +4,7 @@
 #include "Config.h"
 #include "cluteranalysis.hpp"
 #include "localfeature.hpp"
+#include "omp.h"
 //TODO: 省略中间数据的存储和读取实现直接的使用计算
 using namespace std;
 const static int NUMBER_OF_IMAGES_TO_TRAIN = 100;
@@ -202,7 +203,7 @@ namespace vlad{
 #pragma omp parallel for
 
 
-		for (string line : trainlist)
+		for (int i =0; i < trainlist.size(); ++i)
 		{
 #else // linux
 		for (string line : trainlist)
@@ -214,12 +215,12 @@ namespace vlad{
 					cout << "proc " << cnt << endl;
 				if (img_number > NUMBER_OF_IMAGES_TO_TRAIN)
 				{
-					break;
+					//break;
 				}
 				img_number++;
-				srand((unsigned)getTickCount());
+				srand((unsigned)getTickCount());		
 
-				Mat img = imread(PATH_OF_IMAGE + line, 0);
+				Mat img = imread(PATH_OF_IMAGE + trainlist[i], 0);
 				if (img.empty() || img.cols < 64 || img.rows < 64)
 					continue;
 				double t = (double)cv::getTickCount();
@@ -388,7 +389,7 @@ namespace vlad{
 			trainlist.push_back(imagename);
 #ifdef linux
 		//#pragma omp parallel for
-		for (string line : trainlist)//^M
+		for (int i = 0; i < trainlist.size();++i)//^M
 		{//^M
 #else // linux
 		for (string line : trainlist)
@@ -402,7 +403,7 @@ namespace vlad{
 			}
 			try{
 				img_number++;
-				Mat imgS = imread(PATH_OF_IMAGE + line, 0);
+				Mat imgS = imread(PATH_OF_IMAGE + trainlist[i], 0);
 				if (imgS.empty() || imgS.cols < 64 || imgS.rows < 64)
 					continue;
 				// norm image
