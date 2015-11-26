@@ -26,6 +26,7 @@ static string NAME_OF_FEATUREFILE = "VFfeature.txt";
 static int  FEA_DIM = 32;
 static int NUMBER_OF_CLUSTERS = 512;
 class FV{
+public:
 	static void configure()
 	{
 

@@ -3,9 +3,12 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+
 #include <assert.h>
 #include <ctime>
+
 #include <Eigen/Eigen>
+
 #include "utls.h"
 #include "vladmethods.h"
 #include "MethodTimeResume.h"
