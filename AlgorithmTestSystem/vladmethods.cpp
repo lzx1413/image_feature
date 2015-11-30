@@ -7,18 +7,20 @@
 #include "omp.h"
 //TODO: 省略中间数据的存储和读取实现直接的使用计算
 using namespace std;
-const static int NUMBER_OF_IMAGES_TO_TRAIN = 100;
+const static int NUMBER_OF_IMAGES_TO_TRAIN = 10;
 const static int NUMBER_OF_IMAGES_TO_TEST = 100;
 static string PATH_OF_WORK = "D:/E/work/dressplus/code/temp/";
 static string PATH_OF_IMAGE = "D:/E/work/dressplus/code/data/fvtraindata/";
 static string NAME_OF_FEATUREFILE = "vladfeature.txt";
+static string PATH_OF_SIFTFEATURE = "D:/E/work/dressplus/code/AlgorithmTestSystem/AlgorithmTestSystem/data/";
+static string PATH_OF_VLADFEATURE = "";
 const static int SELECT_NUM = 1000;
 static int  FEA_DIM = 128;
 static int NUMBER_OF_CLUSTERS = 256;
 const static int NUMBER_OF_IMAGES_TO_PCA = 100;
 //#define REDUCE_FEATURE
 //#define USE_PCA
-#define linux
+//#define linux
 namespace vlad{
 	/**@brief make some configure works such as the paths
 	*...
@@ -74,15 +76,48 @@ namespace vlad{
 
 		//vector<float> vladFea(feature_dim*clusterNum, 0);
 		vector<float> vladFea(enc, enc + feature_dim*clusterNum);///替代元素的复制环节
-		//TODO: find a way to initial the vector directorly
-		//memcpy(vladFea.data(), enc, feature_dim*clusterNum*sizeof(float));
+		L2NormFeature(vladFea);
 		vl_free(dists);
 		vl_free(assignments);
 		vl_free(idx_v);
 		vl_free(enc);
 		return vladFea;
 	}
+	PCA getPCAmodel(string trainlistfile, int maxComponents, string resultpath)
+	{
+		//string kmeansF = "vlad_kmeans.model";
+		ifstream inputF(trainlistfile);
+		string line;
+		vector<float> data_des;
+		Mat feature_set;
+		int count = 0;
+		while (getline(inputF, line))
+		{
+	
+			if (10 == count)
+			{
+				vector<string> ww;
+				split_words(line, " ", ww);
+				assert(ww.size() == FEA_DIM);
+				for (int i = 0; i < ww.size(); i++)
+					//TODO: bad alloc
+				data_des.push_back(atof(ww[i].c_str()));
+				count=0;
+			    Mat single_fea = Mat(1, data_des.size(), CV_32FC1, data_des.data());
+				feature_set.push_back(single_fea);
+				data_des.clear();
+			}
+		
+			count++;
+		}
+		PCA pca(feature_set, Mat(), PCA::DATA_AS_ROW, maxComponents);
+		FileStorage pcafile(resultpath, FileStorage::WRITE);
+		pcafile << "mean" << pca.mean;
+		pcafile << "e_vectors" << pca.eigenvectors;
+		pcafile << "e_values" << pca.eigenvalues;
+		return pca;
 
+	}
 	PCA getPCAmodel(string trainlistfile, int maxComponents = FEA_DIM)
 	{
 		ifstream inputtrainlistF(trainlistfile.c_str());
@@ -146,12 +181,9 @@ namespace vlad{
 			Mat(), // we do not have a pre-computed mean vector,
 			// so let the PCA engine to compute it
 			PCA::DATA_AS_ROW, // indicate that the vectors
-			// are stored as matrix rows
-			// (use PCA::DATA_AS_COL if the vectors are
-			// the matrix columns)
+		
 			maxComponents // specify, how many principal components to retain
 			);
-		// if there is no test data, just return the computed basis, ready-to-use
 		if (!testset.data)
 			return pca;
 		CV_Assert(testset.cols == pcaset.cols);
@@ -159,18 +191,7 @@ namespace vlad{
 		pca.project(testset, compressed);
 		FileStorage pcafile("pca_model.yml", FileStorage::WRITE);
 		pca.write(pcafile);
-		/*Mat reconstructed;
-		for (int i = 0; i < testset.rows; i++)
-		{
-		Mat vec = testset.row(i), coeffs = compressed.row(i), reconstructed;
-		// compress the vector, the result will be stored
-		// in the i-th row of the output matrix
-		pca.project(vec, coeffs);
-		// and then reconstruct it
-		//pca.backProject(coeffs, reconstructed);
-		// and measure the error
-		//printf("%d. diff = %g\n", i, norm(vec, reconstructed, NORM_L2));
-		}*/
+	
 	}
 
 	void ExitTheSiftFeature(string trainlistfile)
@@ -206,7 +227,7 @@ namespace vlad{
 		for (int i =0; i < trainlist.size(); ++i)
 		{
 #else // linux
-		for (string line : trainlist)
+		for (int i = 0; i < trainlist.size(); ++i)
 		{
 #endif
 
@@ -215,7 +236,7 @@ namespace vlad{
 					cout << "proc " << cnt << endl;
 				if (img_number > NUMBER_OF_IMAGES_TO_TRAIN)
 				{
-					//break;
+					break;
 				}
 				img_number++;
 				srand((unsigned)getTickCount());		
@@ -261,7 +282,7 @@ namespace vlad{
 		outputF.close();
 		}
 	//TODO: this function actually is a keams training function so I can move it to clusteranaysis.hpp if needed
-	VlKMeans* getKmeansModel(int cluster_num, int feature_dim)
+	VlKMeans* getKmeansModel(int cluster_num, int feature_dim,string path_of_siftfeature,string kmeansF)
 	{
 		// set params
 		vl_set_num_threads(0); /* use the default number of threads */
@@ -292,8 +313,8 @@ namespace vlad{
 		vl_kmeans_set_initialization(kmeans, VlKMeansRandomSelection);
 
 
-		string kmeansF = "vlad128_sift32.model";
-		ifstream inputF("vlsift_tmp.fea");
+		//string kmeansF = "vlad_kmeans.model";
+		ifstream inputF(path_of_siftfeature);
 		string line;
 		vector<float> data_des;
 		while (getline(inputF, line))
@@ -319,6 +340,10 @@ namespace vlad{
 		cout << "Save model to " << kmeansF << endl;
 		return kmeans;
 	}
+
+
+
+
 #ifdef REDUCE_FEATURE
 #ifdef USE_PCA
 	 vector<float> VladFeatureEncode(Mat& img, vl_size &dimension, vl_size &numClusters, VlKMeans* kmeans, const PCA&pca)
@@ -372,13 +397,13 @@ namespace vlad{
 #endif
 #endif
 		//load VLAD model
-		//vl_size dimension = -1;
-		//vl_size numClusters = -1;
-		//VlKMeans *kmeans = vlad::initVladEngine("vlad128_sift32.model", dimension, numClusters);
+		vl_size dimension = -1;
+		vl_size numClusters = -1;
+		VlKMeans *kmeans = vlad::initVladEngine("vlad128_sift32.model", dimension, numClusters);
 		//VlKMeans *kmeans = new VlKMeans();
-		VlKMeans*kmeans = getKmeansModel(NUMBER_OF_CLUSTERS, FEA_DIM);
-		vl_size dimension = vl_kmeans_get_dimension(kmeans);
-		vl_size numClusters = vl_kmeans_get_num_centers(kmeans);
+		//VlKMeans*kmeans = getKmeansModel(NUMBER_OF_CLUSTERS, FEA_DIM, "vlsift_tmp.fea");
+		//vl_size dimension = vl_kmeans_get_dimension(kmeans);
+		//vl_size numClusters = vl_kmeans_get_num_centers(kmeans);
 		//------
 		ofstream outputF(NAME_OF_FEATUREFILE);
 		string imagename;
@@ -392,7 +417,7 @@ namespace vlad{
 		for (int i = 0; i < trainlist.size();++i)//^M
 		{//^M
 #else // linux
-		for (string line : trainlist)
+		for (int i = 0; i < trainlist.size(); ++i)
 		{
 #endif
 			if (cnt++ % 100 == 0)
@@ -433,5 +458,151 @@ namespace vlad{
 		vl_kmeans_delete(kmeans);
 		inputF.close();
 		outputF.close();
+		}
+	void  GetVladFeatureFromSift(string kmeansfile,string testlistfile)
+	{
+		String aa = "D:/E/work/dressplus/code/AlgorithmTestSystem/AlgorithmTestSystem/data/featurelist.txt";
+		ifstream inputF(aa);
+		if (inputF.is_open())
+		{
+			cout<<"can not open the list"<<endl;
+		}
+#ifdef REDUCE_FEATURE
+		// load model 
+#ifdef USE_PCA
+		PCA pca;
+		loadPCAmodel("data/pca_model.yml", pca);
+#else
+		Mat mlModel;
+		bool flag = load_metric_model(PATH_OF_WORK + "DimentionReduceMat_vlsift_32.txt", mlModel, "SP");
+		//TODO: add a assert
+#endif
+#endif
+		//load VLAD model
+		vl_size dimension = -1;
+		vl_size numClusters = -1;
+		VlKMeans *kmeans = vlad::initVladEngine(PATH_OF_SIFTFEATURE+kmeansfile, dimension, numClusters);
+		//VlKMeans *kmeans = new VlKMeans();
+		//VlKMeans*kmeans = getKmeansModel(NUMBER_OF_CLUSTERS, FEA_DIM);
+		//vl_size dimension = vl_kmeans_get_dimension(kmeans);
+		//vl_size numClusters = vl_kmeans_get_num_centers(kmeans);
+		//------
+		string imagename;
+		int cnt = 0;
+		int img_number = 0;
+		vector<string> trainlist;
+		string ss;
+		getline(inputF,ss);
+		while (getline(inputF, imagename))
+			trainlist.push_back(imagename);
+#ifdef linux
+		//#pragma omp parallel for
+		for (int i = 0; i < trainlist.size(); ++i)//^M
+		{//^M
+#else // linux
+//#pragma omp parallel for
+		for (int i = 0; i < trainlist.size(); ++i)
+		{
+#endif
+			if (cnt++ % 100 == 0)
+				cout << "proc " << cnt << endl;
+			if (img_number > NUMBER_OF_IMAGES_TO_TEST)
+			{
+				//break;
+			}
+		//	try{
+				img_number++;
+				string sift_path = PATH_OF_SIFTFEATURE + trainlist[i];
+				ifstream sift_image(sift_path.c_str());
+				vector<float> sift_feature;
+				string single_sift_feature;
+				string info_of_image;
+				getline(sift_image, info_of_image);
+				cout << "image " << trainlist[i] << " " << info_of_image << endl;
+				int tmp_line = 2;
+				while (getline(sift_image,single_sift_feature))
+				{
+					vector<float> sift_feature_tmp;
+					/*vector<string> sift_elements;
+					split_words(single_sift_feature," ",sift_elements);
+					for (int ii = 2; ii < sift_elements.size();++ii)
+					{
+					sift_feature.push_back(atof(sift_elements[i].c_str()));
+					}*/
+					istringstream single_sift_stream(single_sift_feature);
+					string x, y;
+					single_sift_stream >> x;
+					single_sift_stream >> y;
+				//	cout << x << "   " << y;
+					float tempnumber;
+					int temp_count = 0;
+					//while (single_sift_stream>>tempnumber)
+					//{
+					//	temp_count++;
+					//	sift_feature_tmp.push_back(tempnumber);
+					////	cout << tempnumber << endl;
+					//}
+					for (int i = 0; i < 128; ++i)
+					{
+						temp_count++;
+						single_sift_stream >> tempnumber;
+						sift_feature_tmp.push_back(tempnumber);
+					}
+					if (temp_count!=FEA_DIM)
+					{
+						cout << "this line can not be parse righrly " << tmp_line << endl;
+						cout << temp_count << endl;
+						continue;
+					}
+					if (tmp_line == 20)
+					{
+						cout << "20th line" << endl;
+						for each (float var in sift_feature_tmp)
+						{
+							cout << var << " ";
+						}
+						cout << endl;
+					}
+					else
+					{
+						for (int i = 0; i < FEA_DIM;++i)
+						{
+							sift_feature.push_back(sift_feature_tmp.at(i));
+						}
+					}
+					//cout << tmp_line << endl;
+					//cout << tempnumber<<endl;
+					tmp_line++;
+					
+					
+
+				}
+				cout << sift_feature.size() << endl;
+				cout <<sift_feature.at(0)<<" "<< sift_feature.at(sift_feature.size() - 1) << endl;
+				int len = sift_feature.size() / dimension;
+				assert(sift_feature.size() % dimension == 0);
+				vector<float> vlf = vlad::encodeVladFea(kmeans, sift_feature, dimension, numClusters);
+				assert(dimension*numClusters == vlf.size());
+				vector<string> inputfile;
+				split_words(trainlist[i], ".", inputfile);
+
+				string outputname = PATH_OF_VLADFEATURE+inputfile[0]+".vladfea";
+				ofstream vladsavefile(outputname.c_str());
+				for (int i = 0; i < vlf.size();++i)
+				{
+					vladsavefile << vlf.at(i);
+				}
+				vladsavefile << endl;
+				vladsavefile.close();
+				sift_image.close();
+		//	}
+		//	catch (...){
+		//		cout << "there are something wrong with picture" << PATH_OF_IMAGE << line << endl;
+		//		continue;
+		//	}
+		
+		}
+			vl_kmeans_delete(kmeans);
+			inputF.close();
 		}
 	}

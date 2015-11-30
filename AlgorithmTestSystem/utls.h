@@ -5,8 +5,8 @@
 #include <fstream>
 using namespace std;
 using namespace cv;
-void L2NormFeature(Mat& smat, int rowidx);
-void L2NormFeature(Mat& smat);
+void L2NormFeature(InputOutputArray& smat_, int rowidx);
+void L2NormFeature(InputOutputArray& smat_);
 void split_words(const string& src, const string& separator, vector<string>& dest);
 void RootNormFeature(InputOutputArray& sdes);
 bool load_metric_model(string filePath, cv::Mat& ml_model, string method);

@@ -5,8 +5,9 @@
 using Matric_DDF = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 /**@brief do the l2 normlization to the selected row of the  imput mat 
 */
-void L2NormFeature(Mat& smat, int rowidx)
+void L2NormFeature(InputOutputArray& smat_, int rowidx)
 {
+	Mat smat = smat_.getMat();
 	int des_dim = smat.cols;
 	float total = 0.0;
 	for (int kk = 0; kk < des_dim; kk++)
@@ -17,8 +18,9 @@ void L2NormFeature(Mat& smat, int rowidx)
 	for (int kk = 0; kk < des_dim; kk++)
 		smat.at<float>(rowidx, kk) /= total;
 }
-void L2NormFeature(Mat& smat)
+void L2NormFeature(InputOutputArray& smat_)
 {
+	Mat smat = smat_.getMat();
 	for (int i = 0; i < smat.rows; i++)
 		L2NormFeature(smat, i);
 }
