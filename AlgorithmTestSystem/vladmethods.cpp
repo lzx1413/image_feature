@@ -5,6 +5,8 @@
 #include "cluteranalysis.hpp"
 #include "localfeature.hpp"
 #include "omp.h"
+#include "Log/Log.h"
+#include "Log/LogManager.h"
 //TODO: 省略中间数据的存储和读取实现直接的使用计算
 using namespace std;
 const static int NUMBER_OF_IMAGES_TO_TRAIN = 10;
@@ -15,10 +17,12 @@ static string NAME_OF_FEATUREFILE = "vladfeature.txt";
 static string PATH_OF_SIFTFEATURE = "D:/E/work/dressplus/code/AlgorithmTestSystem/AlgorithmTestSystem/data/";
 static string PATH_OF_VLADFEATURE = "";
 static string PATH_OF_PCAMODEL = "";
+static CLog *mylog = nullptr;
 const static int SELECT_NUM = 1000;
 static int  FEA_DIM = 128;
 static int NUMBER_OF_CLUSTERS = 256;
 const static int NUMBER_OF_IMAGES_TO_PCA = 100;
+
 //#define REDUCE_FEATURE
 //#define USE_PCA
 //#define linux
@@ -38,6 +42,9 @@ namespace vlad{
 		PATH_OF_SIFTFEATURE = configSettings.Read("path_of_siftfeature", PATH_OF_SIFTFEATURE);
 		PATH_OF_VLADFEATURE = configSettings.Read("path_of_vladfeature", PATH_OF_VLADFEATURE);
 		PATH_OF_PCAMODEL = configSettings.Read("path_of_pcamodel", PATH_OF_PCAMODEL);
+		string path_of_log = configSettings.Read("path_of_log", string(" "));
+		mylog = LogManager::OpenLog(path_of_log.c_str());
+		mylog->WriteLog("configuration of the vlad completed");
 	}
 
 	VlKMeans * initVladEngine(string vlad_km_path, vl_size& feature_dim, vl_size& clusterNum)
@@ -54,6 +61,7 @@ namespace vlad{
 		vl_free(vlad_km);
 		feature_dim = dimension;
 		clusterNum = numClusters;
+		mylog->WriteLog("sucessfully init the vlad engine", CLog::LL_INFORMATION);
 		return kmeans;
 	}
 
@@ -111,18 +119,22 @@ namespace vlad{
 		while (getline(inputF, line))
 		{
 	
-			if (10 == count)
+			if (count%10==0)
 			{
-				vector<string> ww;
-				split_words(line, " ", ww);
-				assert(ww.size() == FEA_DIM);
-				for (int i = 0; i < ww.size(); i++)
-					//TODO: bad alloc
-				data_des.push_back(atof(ww[i].c_str()));
-				count=0;
-			    Mat single_fea = Mat(1, data_des.size(), CV_32FC1, data_des.data());
-				feature_set.push_back(single_fea);
-				data_des.clear();
+				try{
+					vector<string> ww;
+					split_words(line, " ", ww);
+					assert(ww.size() == FEA_DIM);
+					for (int i = 0; i < ww.size(); i++)
+						//TODO: bad alloc
+						data_des.push_back(atof(ww[i].c_str()));
+					Mat single_fea = Mat(1, data_des.size(), CV_32FC1, data_des.data());
+					feature_set.push_back(single_fea);
+					data_des.clear();
+				}
+				catch (...){
+					mylog->WriteLog("there some thing wrong of the sift data in line " + std::to_string(count), CLog::LL_ERROR);
+				}
 			}
 		
 			count++;
@@ -132,6 +144,7 @@ namespace vlad{
 		pcafile << "mean" << pca.mean;
 		pcafile << "e_vectors" << pca.eigenvectors;
 		pcafile << "e_values" << pca.eigenvalues;
+		mylog->WriteLog("sucessfully get the pca model from sift features saved in " + resultpath, CLog::LL_INFORMATION);
 		return pca;
 
 	}
@@ -179,6 +192,7 @@ namespace vlad{
 
 			catch (...){
 				std::cout << "there are something wrong with picture" << PATH_OF_IMAGE << line << endl;
+				mylog->WriteLog("there are something wrong with picture " + PATH_OF_IMAGE + line);
 				continue;
 			}
 		}
@@ -187,6 +201,7 @@ namespace vlad{
 		pcafile << "mean" << pca.mean;
 		pcafile << "e_vectors" << pca.eigenvectors;
 		pcafile << "e_values" << pca.eigenvalues;
+		mylog->WriteLog("sucessfully get the pca model from pictures saved in " + result_path, CLog::LL_INFORMATION);
 		return pca;
 	}
 
@@ -205,11 +220,14 @@ namespace vlad{
 		FileStorage pcafile(pcafilepath, FileStorage::READ);
 		if (!pcafile.isOpened())
 		{
-			std::cout << "can not opencv the pcafiel" << endl;
+			std::cout << "can not open the pca model file" << endl;
+			mylog->WriteLog("can not open the pca model file");
+			return ;
 		}
 		pcafile["mean"] >> pca.mean;
 		pcafile["e_vectors"] >> pca.eigenvectors;
 		pcafile["e_values"] >> pca.eigenvalues;
+		mylog->WriteLog("sucessfully load the pca model from " + pcafilepath, CLog::LL_INFORMATION);
 
 	}
 
@@ -343,7 +361,8 @@ namespace vlad{
 				}
 			}
 			catch (...){
-				cout << "there are something wrong with picture" << PATH_OF_IMAGE << line << endl;
+				cout << "there are something wrong with picture" << PATH_OF_IMAGE << trainlistfile.at(i) << endl;
+				mylog->WriteLog("there are something wrong with picture" +PATH_OF_IMAGE+trainlistfile.at(i));
 				continue;
 			}
 		}
@@ -579,11 +598,13 @@ namespace vlad{
 	//************************************
 	void  GetVladFeatureFromSift(string kmeansfile,string testlistfile)
 	{
-		String aa = "D:/E/work/dressplus/code/AlgorithmTestSystem/AlgorithmTestSystem/data/featurelist.txt";
-		ifstream inputF(aa);
+		
+		ifstream inputF(testlistfile);
 		if (inputF.is_open())
 		{
 			cout<<"can not open the list"<<endl;
+			mylog->WriteLog("can not open the sift list"+testlistfile);
+			return;
 		}
 #ifdef REDUCE_FEATURE
 		// load model 
@@ -613,17 +634,14 @@ namespace vlad{
 		getline(inputF,ss);
 		while (getline(inputF, imagename))
 			trainlist.push_back(imagename);
-#ifdef linux
+
 		//#pragma omp parallel for
-		for (int i = 0; i < trainlist.size(); ++i)//^M
-		{//^M
-#else // linux
-//#pragma omp parallel for
+
 		for (int i = 0; i < trainlist.size(); ++i)
 		{
-#endif
-			if (cnt++ % 100 == 0)
-				cout << "proc " << cnt << endl;
+
+		    	if (cnt++ % 100 == 0)
+			    	cout << "proc " << cnt << endl;
 				img_number++;
 				string sift_path = PATH_OF_SIFTFEATURE + trainlist[i];
 				ifstream sift_image(sift_path.c_str());
@@ -646,22 +664,13 @@ namespace vlad{
 					{
 						temp_count++;
 						sift_feature_tmp.push_back(tempnumber);
-					//	cout << tempnumber << endl;
 					}
 					if (temp_count!=FEA_DIM)
 					{
 						cout << "this line can not be parse righrly " << tmp_line << endl;
+						mylog->WriteLog(trainlist[i] + std::to_string(tmp_line) + "can not be parsed in the right way");
 						cout << temp_count << endl;
 						continue;
-					}
-					if (tmp_line == 20)
-					{
-						cout << "20th line" << endl;
-						for each (float var in sift_feature_tmp)
-						{
-							cout << var << " ";
-						}
-						cout << endl;
 					}
 					else
 					{
@@ -671,9 +680,6 @@ namespace vlad{
 						}
 					}
 					tmp_line++;
-					
-					
-
 				}
 				cout << sift_feature.size() << endl;
 				cout <<sift_feature.at(0)<<" "<< sift_feature.at(sift_feature.size() - 1) << endl;
@@ -683,7 +689,6 @@ namespace vlad{
 				assert(dimension*numClusters == vlf.size());
 				vector<string> inputfile;
 				split_words(trainlist[i], ".", inputfile);
-
 				string outputname = PATH_OF_VLADFEATURE+inputfile[0]+".vladfea";
 				ofstream vladsavefile(outputname.c_str());
 				for (int i = 0; i < vlf.size();++i)

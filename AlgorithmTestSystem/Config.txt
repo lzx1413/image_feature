@@ -1,2 +1,6 @@
 path_of_work=D:/E/work/dressplus/code/temp/
 path_of_image=D:/E/work/dressplus/code/data/fvtraindata/
+path_of_siftfeature=
+path_of_vladfeature=
+path_of_pcamodel=
+path_of_log=mylog.log

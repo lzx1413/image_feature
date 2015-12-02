@@ -86,6 +86,7 @@ int main(int argc, char* argv[])
 		}
 	}
 #ifdef kmeans_pca
+	vlad::configure(256,128);
 	PCA pca;
 	vlad::loadPCAmodel("pca_model.yml",pca);
 	cout<<pca.eigenvalues<<endl;
