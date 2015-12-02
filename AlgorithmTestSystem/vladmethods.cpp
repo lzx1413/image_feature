@@ -31,14 +31,17 @@ namespace vlad{
 	{
 		FEA_DIM = feature_dimension;
 		NUMBER_OF_CLUSTERS = cluster_number;
-
-		const char ConfigFile[] = "Config.txt";
+        const char ConfigFile[] = "Config.txt";
 		Config configSettings(ConfigFile);
 		PATH_OF_IMAGE = configSettings.Read("path_of_image", PATH_OF_IMAGE);
 		PATH_OF_WORK = configSettings.Read("path_of_work", PATH_OF_WORK);
+		PATH_OF_SIFTFEATURE = configSettings.Read("path_of_siftfeature", PATH_OF_SIFTFEATURE);
+		PATH_OF_VLADFEATURE = configSettings.Read("path_of_vladfeature", PATH_OF_VLADFEATURE);
+		PATH_OF_PCAMODEL = configSettings.Read("path_of_pcamodel", PATH_OF_PCAMODEL);
 	}
 
 	VlKMeans * initVladEngine(string vlad_km_path, vl_size& feature_dim, vl_size& clusterNum)
+
 	{
 		/// load VLAD model
 		vl_size dimension = -1;
@@ -85,7 +88,19 @@ namespace vlad{
 		vl_free(enc);
 		return vladFea;
 	}
-	PCA getPCAmodel(string trainlistfile, int maxComponents, string resultpath)
+
+
+    //************************************
+	// Method:    getPCAmodelFromSIFT
+	// FullName:  vlad::getPCAmodelFromSIFT
+	// Access:    public 
+	// Returns:   cv::PCA
+	// Qualifier:
+	// Parameter: string trainlistfile trainlistfile the list of the sift feature 
+	// Parameter: int maxComponents  the dimension of the pca
+	// Parameter: string resultpath
+	//************************************
+	PCA getPCAmodelFromSIFT(string trainlistfile, int maxComponents, string resultpath)
 	{
 		//string kmeansF = "vlad_kmeans.model";
 		ifstream inputF(trainlistfile);
@@ -120,7 +135,18 @@ namespace vlad{
 		return pca;
 
 	}
-	PCA getPCAmodel(string trainlistfile, int maxComponents = FEA_DIM)
+
+	//************************************
+	// Method:    getPCAmodelFromImage
+	// FullName:  vlad::getPCAmodelFromImage
+	// Access:    public 
+	// Returns:   cv::PCA
+	// Qualifier:
+	// Parameter: string trainlistfile the list of the images
+	// Parameter: int maxComponents the dimension of the pca 
+	// Parameter: string result_path
+	//************************************
+	PCA getPCAmodelFromImage(string trainlistfile, int maxComponents = FEA_DIM,string result_path = PATH_OF_PCAMODEL)
 	{
 		ifstream inputtrainlistF(trainlistfile.c_str());
 		string line;
@@ -157,12 +183,23 @@ namespace vlad{
 			}
 		}
 		PCA pca(descriptor_set, Mat(), PCA::DATA_AS_ROW, maxComponents);
-		FileStorage pcafile("data/pca_model.yml", FileStorage::WRITE);
+		FileStorage pcafile(result_path, FileStorage::WRITE);
 		pcafile << "mean" << pca.mean;
 		pcafile << "e_vectors" << pca.eigenvectors;
 		pcafile << "e_values" << pca.eigenvalues;
 		return pca;
 	}
+
+
+	//************************************
+	// Method:    loadPCAmodel
+	// FullName:  vlad::loadPCAmodel
+	// Access:    public 
+	// Returns:   void
+	// Qualifier:
+	// Parameter: const string pcafilepath
+	// Parameter: PCA & pca
+	//************************************
 	void  loadPCAmodel(const string pcafilepath, PCA& pca)
 	{
 		FileStorage pcafile(pcafilepath, FileStorage::READ);
@@ -175,6 +212,18 @@ namespace vlad{
 		pcafile["e_values"] >> pca.eigenvalues;
 
 	}
+
+
+	//************************************
+	// Method:    PCA_project_with_white
+	// FullName:  vlad::PCA_project_with_white
+	// Access:    public 
+	// Returns:   void
+	// Qualifier:
+	// Parameter: InputArray & rawdata
+	// Parameter: vector<float> & reduced_data
+	// Parameter: PCA & pca
+	//************************************
 	void PCA_project_with_white(InputArray& rawdata, vector<float>& reduced_data,PCA& pca)
 	{
 		pca.project(rawdata, reduced_data);
@@ -183,6 +232,8 @@ namespace vlad{
 			reduced_data.at(i) = reduced_data.at(i) / sqrt(pca.eigenvalues.at<float>(i, 0)+0.001);
 		}
 	}
+
+
 	PCA compressPCA(const Mat& pcaset, int maxComponents,
 		const Mat& testset, Mat& compressed)
 	{
@@ -203,6 +254,14 @@ namespace vlad{
 	
 	}
 
+	//************************************
+	// Method:    ExitTheSiftFeature
+	// FullName:  vlad::ExitTheSiftFeature
+	// Access:    public 
+	// Returns:   void
+	// Qualifier:
+	// Parameter: string trainlistfile
+	//************************************
 	void ExitTheSiftFeature(string trainlistfile)
 	{
 		ifstream inputtrainlistF(trainlistfile.c_str());
@@ -292,7 +351,21 @@ namespace vlad{
 		inputtrainlistF.close();
 		outputF.close();
 		}
-	//TODO: this function actually is a keams training function so I can move it to clusteranaysis.hpp if needed
+
+
+
+
+	//************************************
+	// Method:    getKmeansModel
+	// FullName:  vlad::getKmeansModel
+	// Access:    public 
+	// Returns:   VlKMeans*
+	// Qualifier:
+	// Parameter: int cluster_num
+	// Parameter: int feature_dim
+	// Parameter: string path_of_siftfeature
+	// Parameter: string kmeansF
+	//************************************
 	VlKMeans* getKmeansModel(int cluster_num, int feature_dim,string path_of_siftfeature,string kmeansF)
 	{
 #ifdef USE_PCA
@@ -492,6 +565,18 @@ namespace vlad{
 		inputF.close();
 		outputF.close();
 		}
+
+
+
+	//************************************
+	// Method:    GetVladFeatureFromSift
+	// FullName:  vlad::GetVladFeatureFromSift
+	// Access:    public 
+	// Returns:   void
+	// Qualifier:
+	// Parameter: string kmeansfile
+	// Parameter: string testlistfile
+	//************************************
 	void  GetVladFeatureFromSift(string kmeansfile,string testlistfile)
 	{
 		String aa = "D:/E/work/dressplus/code/AlgorithmTestSystem/AlgorithmTestSystem/data/featurelist.txt";
@@ -539,11 +624,6 @@ namespace vlad{
 #endif
 			if (cnt++ % 100 == 0)
 				cout << "proc " << cnt << endl;
-			if (img_number > NUMBER_OF_IMAGES_TO_TEST)
-			{
-				//break;
-			}
-		//	try{
 				img_number++;
 				string sift_path = PATH_OF_SIFTFEATURE + trainlist[i];
 				ifstream sift_image(sift_path.c_str());
@@ -556,30 +636,17 @@ namespace vlad{
 				while (getline(sift_image,single_sift_feature))
 				{
 					vector<float> sift_feature_tmp;
-					/*vector<string> sift_elements;
-					split_words(single_sift_feature," ",sift_elements);
-					for (int ii = 2; ii < sift_elements.size();++ii)
-					{
-					sift_feature.push_back(atof(sift_elements[i].c_str()));
-					}*/
 					istringstream single_sift_stream(single_sift_feature);
 					string x, y;
 					single_sift_stream >> x;
 					single_sift_stream >> y;
-				//	cout << x << "   " << y;
 					float tempnumber;
 					int temp_count = 0;
-					//while (single_sift_stream>>tempnumber)
-					//{
-					//	temp_count++;
-					//	sift_feature_tmp.push_back(tempnumber);
-					////	cout << tempnumber << endl;
-					//}
-					for (int i = 0; i < 128; ++i)
+					while (single_sift_stream>>tempnumber)
 					{
 						temp_count++;
-						single_sift_stream >> tempnumber;
 						sift_feature_tmp.push_back(tempnumber);
+					//	cout << tempnumber << endl;
 					}
 					if (temp_count!=FEA_DIM)
 					{
@@ -603,8 +670,6 @@ namespace vlad{
 							sift_feature.push_back(sift_feature_tmp.at(i));
 						}
 					}
-					//cout << tmp_line << endl;
-					//cout << tempnumber<<endl;
 					tmp_line++;
 					
 					
@@ -628,12 +693,7 @@ namespace vlad{
 				vladsavefile << endl;
 				vladsavefile.close();
 				sift_image.close();
-		//	}
-		//	catch (...){
-		//		cout << "there are something wrong with picture" << PATH_OF_IMAGE << line << endl;
-		//		continue;
-		//	}
-		
+
 		}
 			vl_kmeans_delete(kmeans);
 			inputF.close();
