@@ -14,6 +14,7 @@ static string PATH_OF_IMAGE = "D:/E/work/dressplus/code/data/fvtraindata/";
 static string NAME_OF_FEATUREFILE = "vladfeature.txt";
 static string PATH_OF_SIFTFEATURE = "D:/E/work/dressplus/code/AlgorithmTestSystem/AlgorithmTestSystem/data/";
 static string PATH_OF_VLADFEATURE = "";
+static string PATH_OF_PCAMODEL = "";
 const static int SELECT_NUM = 1000;
 static int  FEA_DIM = 128;
 static int NUMBER_OF_CLUSTERS = 256;
@@ -21,6 +22,7 @@ const static int NUMBER_OF_IMAGES_TO_PCA = 100;
 //#define REDUCE_FEATURE
 //#define USE_PCA
 //#define linux
+#define white
 namespace vlad{
 	/**@brief make some configure works such as the paths
 	*...
@@ -173,7 +175,14 @@ namespace vlad{
 		pcafile["e_values"] >> pca.eigenvalues;
 
 	}
-
+	void PCA_project_with_white(InputArray& rawdata, vector<float>& reduced_data,PCA& pca)
+	{
+		pca.project(rawdata, reduced_data);
+		for (int i = 0; i < reduced_data.size(); ++i)
+		{
+			reduced_data.at(i) = reduced_data.at(i) / sqrt(pca.eigenvalues.at<float>(i, 0)+0.001);
+		}
+	}
 	PCA compressPCA(const Mat& pcaset, int maxComponents,
 		const Mat& testset, Mat& compressed)
 	{
@@ -251,6 +260,8 @@ namespace vlad{
 				std::cout << t << " s" << std::endl;
 #ifdef REDUCE_FEATURE
 #ifdef USE_PCA
+ 
+
 				Mat reduced_descriptors = pca.project(descriptors);
 				vector<float> normfea = getVector(reduced_descriptors);
 
@@ -284,6 +295,10 @@ namespace vlad{
 	//TODO: this function actually is a keams training function so I can move it to clusteranaysis.hpp if needed
 	VlKMeans* getKmeansModel(int cluster_num, int feature_dim,string path_of_siftfeature,string kmeansF)
 	{
+#ifdef USE_PCA
+		PCA pca;	
+		loadPCAmodel(PATH_OF_PCAMODEL, pca);
+#endif
 		// set params
 		vl_set_num_threads(0); /* use the default number of threads */
 
@@ -317,14 +332,32 @@ namespace vlad{
 		ifstream inputF(path_of_siftfeature);
 		string line;
 		vector<float> data_des;
+		vector<float> single_data;
+		vector<float> reduced_data;
 		while (getline(inputF, line))
 		{
 			vector<string> ww;
 			split_words(line, " ", ww);
 			assert(ww.size() == FEA_DIM);
 			for (int i = 0; i < ww.size(); i++)
-				//TODO: bad alloc
-				data_des.push_back(atof(ww[i].c_str()));
+			{	//TODO: bad alloc
+				single_data.push_back(atof(ww[i].c_str()));
+			}
+#ifdef USE_PCA
+#ifdef white
+			PCA_project_with_white(single_data, reduced_data, pca);
+#else
+			pca.project(single_data, reduced_data);
+#endif
+
+#endif //
+
+			for (int i = 0; i < FEA_DIM; i++)
+			{
+				data_des.push_back(reduced_data.at(i));
+			}
+			single_data.clear();
+			reduced_data.clear();
 		}
 
 

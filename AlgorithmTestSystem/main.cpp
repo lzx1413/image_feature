@@ -19,8 +19,9 @@ using namespace cv;
 using Eigen::MatrixXd;
 const static int LENGTH_OF_SINGLE_DATA = 128;
 //#define ReduceMatrix
-#define VLAD
+//#define VLAD
 //#define kmeans
+#define kmeans_pca
 void help()
 {
 	cout << "Ussage:--trainlist <trianlist \n\t --testlist <testlist>" << endl;
@@ -84,6 +85,11 @@ int main(int argc, char* argv[])
 
 		}
 	}
+#ifdef kmeans_pca
+	PCA pca;
+	vlad::loadPCAmodel("pca_model.yml",pca);
+	cout<<pca.eigenvalues<<endl;
+#endif
 #ifdef kmeans
 	vlad::getKmeansModel(cluster_num,feature_dimention,rawfeaturefile,resultpath);
 #endif
