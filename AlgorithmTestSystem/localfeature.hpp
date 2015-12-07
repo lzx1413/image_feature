@@ -2,7 +2,7 @@
 #include <opencv2/opencv.hpp>
 #include <vl/dsift.h>
 #include <vl/sift.h>
-
+#include <opencv2/xfeatures2d/cuda.hpp>
 #include "utls.h"
 class LocalFeature{
 public:
@@ -194,4 +194,56 @@ public:
 		descriptor = nullptr;
 		vl_sift_delete(SiftFilt);
 	}
-};
+	static void  extDenseSURFDes(Mat& sImg, Mat& descriptors)
+	{
+		Rect box = Rect(1, 1, sImg.size().width - 2, sImg.size().height - 2);
+		Mat img;
+		if (sImg.channels() == 1)
+			img = sImg;
+		else {
+			cv::cvtColor(sImg, img, cv::COLOR_BGR2GRAY);
+		}
+		int normWidth = 320;
+		int normHeight = 320.0 / img.size().width*img.size().height;
+		resize(img, img, Size(normWidth, normHeight));
+		cuda::GpuMat raw_image;
+		raw_image.upload(img);
+		int featureScale = 8.0;
+		//	3,        //featureScaleLevels
+		int scaleNum = 3;
+		//	1.414f,   //featureScaleMul
+		float scaleMul = 1.414;
+		//	4,        //initXyStep2dx
+		int xyStep = 4;
+
+		//  descriptor
+		int dim = -1;
+		int valid_num = 0;
+		vector<float> descriptors_set;
+		cuda::SURF_CUDA surf;
+		for (int i = 0; i < scaleNum; i++)
+		{
+			cuda::GpuMat  descriptors_scale;
+			vector<float> descriptors_scale_tmp;
+			int featureScale_ = int(featureScale*powf(scaleMul, i));
+			int xyStep_ = int(xyStep*powf(scaleMul, i));
+
+			vector<KeyPoint> kps;
+			for (int i = xyStep_; i < img.rows - xyStep_; i += xyStep_)
+			{
+				for (int j = xyStep_; j < img.cols - xyStep_; j += xyStep_)
+				{
+					// x,y,radius
+					kps.push_back(KeyPoint(float(j), float(i), float(xyStep_)));
+			
+				}
+			}
+		    surf(raw_image, cuda::GpuMat(), kps,descriptors_scale,true);
+			valid_num += descriptors_scale.rows;
+			surf.downloadDescriptors(descriptors_scale, descriptors_scale_tmp);
+			descriptors_set.insert(descriptors_set.end(), descriptors_scale_tmp.begin(), descriptors_scale_tmp.end());
+		}
+		descriptors = Mat(descriptors_set, true).reshape(0, valid_num);
+		RootNormFeature(descriptors);
+	}
+	};

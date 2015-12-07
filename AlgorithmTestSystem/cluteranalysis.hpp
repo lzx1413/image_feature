@@ -125,6 +125,10 @@ public:
 		ifp.close();
 		cout << "Load model ok " << endl;
 	}
+	static void getSURFwithGPU()
+	{
+
+	}
 };
 
 

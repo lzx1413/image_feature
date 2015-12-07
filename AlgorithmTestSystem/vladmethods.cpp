@@ -332,7 +332,8 @@ namespace vlad{
 					continue;
 				double t = (double)cv::getTickCount();
 				Mat descriptors;
-				LocalFeature::extDenseVlSiftDes(img, descriptors);
+				//LocalFeature::extDenseVlSiftDes(img, descriptors);
+				LocalFeature::extDenseSURFDes(img, descriptors);
 			    t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
 				std::cout << t << " s" << std::endl;
 #ifdef REDUCE_FEATURE
