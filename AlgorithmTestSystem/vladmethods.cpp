@@ -1,3 +1,7 @@
+#if(defined(_MSC_VER) && (_MSC_VER < 1900)) 
+#define snprintf _snprintf 
+#endif 
+
 #include "vladmethods.h"
 #include <iostream>
 #include <fstream>
@@ -7,6 +11,7 @@
 #include "omp.h"
 #include "Log/Log.h"
 #include "Log/LogManager.h"
+
 //TODO: 省略中间数据的存储和读取实现直接的使用计算
 using namespace std;
 const static int NUMBER_OF_IMAGES_TO_TRAIN = 10;
@@ -250,7 +255,28 @@ namespace vlad{
 			reduced_data.at(i) = reduced_data.at(i) / sqrt(pca.eigenvalues.at<float>(i, 0)+0.001);
 		}
 	}
+	//************************************
+	// Method:    PCA_project_with_white
+	// FullName:  vlad::PCA_project_with_white
+	// Access:    public 
+	// Returns:   void
+	// Qualifier:
+	// Parameter: InputArray & rawdata
+	// Parameter: Mat & reduced_data
+	// Parameter: PCA & pca
+	//************************************
+	void PCA_project_with_white(InputArray& rawdata, Mat& reduced_data, PCA &pca)
+	{
+		pca.project(rawdata, reduced_data);
+		for (int i = 0; i < reduced_data.rows;++i)
+		{
+			for (int j = 0; j < reduced_data.rows; ++j)
+			{
+				reduced_data.at<float>(i,j) /= sqrt(pca.eigenvalues.at<float>(j, 0) + 0.001);
 
+			}
+		}
+	}
 
 	PCA compressPCA(const Mat& pcaset, int maxComponents,
 		const Mat& testset, Mat& compressed)

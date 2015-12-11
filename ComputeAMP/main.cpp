@@ -54,6 +54,16 @@ compute_ap(const set<string>& pos, const set<string>& amb, const vector<string>&
 int
 main(int argc, char** argv)
 {
+	vector<string>numlist{ "nan", "111" };
+	for (string num : numlist)
+	{
+		cout << std::stof(num) << endl;
+		if (isnan(stof(num)))
+		{
+			cout << "it is not number" << endl;
+		}
+	}
+getchar();
 	/*if (argc != 3) {
 		cout << "Usage: ./compute_ap [GROUNDTRUTH QUERY] [RANKED LIST]\n";
 		return -1;

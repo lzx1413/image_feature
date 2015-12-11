@@ -14,6 +14,7 @@
 #include "MethodTimeResume.h"
 #include "fishermethods.hpp"
 #include "StopWatch.hpp"
+#include "testpca.hpp"
 using namespace std;
 using namespace cv;
 using Eigen::MatrixXd;
@@ -21,7 +22,8 @@ const static int LENGTH_OF_SINGLE_DATA = 128;
 //#define ReduceMatrix
 //#define VLAD
 //#define kmeans
-#define kmeans_pca
+//#define kmeans_pca
+#define test_pca
 void help()
 {
 	cout << "Ussage:--trainlist <trianlist \n\t --testlist <testlist>" << endl;
@@ -85,11 +87,17 @@ int main(int argc, char* argv[])
 
 		}
 	}
+#ifdef test_pca
+	Mat img1 = imread("data/img1.png");
+	Mat img2 = imread("data/img2.png");
+	if (img1.empty()||img2.empty())
+	{
+		cout << "can not open imags" << endl;
+	}
+	testPCA(img1, img2);
+#endif
 #ifdef kmeans_pca
-	vlad::configure(256,128);
-	PCA pca;
-	vlad::loadPCAmodel("pca_model.yml",pca);
-	cout<<pca.eigenvalues<<endl;
+
 #endif
 #ifdef kmeans
 	vlad::getKmeansModel(cluster_num,feature_dimention,rawfeaturefile,resultpath);

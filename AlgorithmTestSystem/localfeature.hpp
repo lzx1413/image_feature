@@ -221,6 +221,7 @@ public:
 		int valid_num = 0;
 		vector<float> descriptors_set;
 		cuda::SURF_CUDA surf;
+		surf.extended = false;
 		for (int i = 0; i < scaleNum; i++)
 		{
 			cuda::GpuMat  descriptors_scale;
